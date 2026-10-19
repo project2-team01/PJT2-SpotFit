@@ -30,36 +30,93 @@ def q4(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.loc[frame["기준_년분기_코드"] == 20254].copy()
 
 
+def concentration_band(share: float) -> str:
+    """A review flag for category concentration, not a data-error label."""
+    if share >= .90:
+        return "90% 이상"
+    if share >= .70:
+        return "70~90% 미만"
+    return "70% 미만"
+
+
 def font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     path = Path("C:/Windows/Fonts/malgun.ttf")
     return ImageFont.truetype(str(path), size) if path.exists() else ImageFont.load_default()
 
 
 def concentration_chart(shares: dict[str, float]) -> None:
-    im = Image.new("RGB", (1000, 470), "#ffffff")
+    im = Image.new("RGB", (1150, 635), "#ffffff")
     d = ImageDraw.Draw(im)
-    title, body, small = font(26), font(20), font(15)
+    title, body, small = font(28), font(20), font(16)
     d.text((55, 30), "Q4 행정동 지출: 상위 5개 동 집중도", fill="#17243a", font=title)
-    d.text((55, 75), "각 지표별 상위 5개 동이 해당 지표 합계에서 차지하는 비중", fill="#566579", font=small)
+    d.text((55, 78), "지표마다 상위 5개 동이 해당 지표의 서울 합계에서 차지하는 비중", fill="#566579", font=small)
     rows = [("전체 지출", shares["total"], "#2b6cb0"),
             ("여가·문화 지출", shares["leisure"], "#8558ad"),
+            ("교통·여가·기타 제외", shares["exclude3"], "#bd7a37"),
+            ("음식 + 식료품", shares["food_grocery"], "#527b95"),
             ("음식 지출", shares["food"], "#2c9672")]
     for i, (label, share, color) in enumerate(rows):
-        y = 140 + i * 94
+        y = 138 + i * 88
         d.text((55, y + 10), label, fill="#17243a", font=body)
-        d.rounded_rectangle((240, y, 830, y + 42), radius=8, fill="#edf1f5")
-        d.rounded_rectangle((240, y, 240 + 590 * share, y + 42), radius=8, fill=color)
-        d.text((850, y + 8), f"{share:.1%}", fill="#17243a", font=body)
-    d.text((55, 435), "지표마다 상위 5개 동의 구성은 다를 수 있음", fill="#64748b", font=small)
+        d.rounded_rectangle((300, y, 960, y + 42), radius=8, fill="#edf1f5")
+        d.rounded_rectangle((300, y, 300 + 660 * share, y + 42), radius=8, fill=color)
+        d.text((982, y + 8), f"{share:.1%}", fill="#17243a", font=body)
+    d.text((55, 590), "세 항목 제외는 대안 지표일 뿐 정제된 실제 소비를 뜻하지 않음", fill="#64748b", font=small)
     im.save(FIGURES / "Q4_행정동_지출집중도.png")
 
 
-def food_coffee_chart(frame: pd.DataFrame, rho: float) -> None:
+def concentration_location_chart(frame: pd.DataFrame) -> None:
+    """Locate the 24 Q4 category-concentrated dongs using source centroids."""
+    im = Image.new("RGB", (2050, 1080), "#ffffff")
+    d = ImageDraw.Draw(im)
+    title, body, small = font(35), font(21), font(17)
+    d.text((65, 30), "Q4 한 항목에 지출이 집중된 24개 행정동", fill="#17243a", font=title)
+    d.text((65, 82), "원천 대표 좌표 · 주황 70~90% 미만 15개 · 빨강 90% 이상 9개", fill="#566579", font=small)
+    left, right, top, bottom = 75, 1040, 170, 890
+    d.rounded_rectangle((left, top, right, bottom), radius=15, fill="#f8fafc", outline="#d9e2ec", width=2)
+    xmin, xmax = frame["엑스좌표_값"].min(), frame["엑스좌표_값"].max()
+    ymin, ymax = frame["와이좌표_값"].min(), frame["와이좌표_값"].max()
+
+    def xy(row: pd.Series) -> tuple[float, float]:
+        x = left + 40 + (row["엑스좌표_값"] - xmin) / (xmax - xmin) * (right - left - 80)
+        y = top + 40 + (ymax - row["와이좌표_값"]) / (ymax - ymin) * (bottom - top - 80)
+        return x, y
+
+    for _, row in frame.iterrows():
+        x, y = xy(row)
+        if row["Q4_집중구간"] == "90% 이상":
+            color, radius = "#b63838", 9
+        elif row["Q4_집중구간"] == "70~90% 미만":
+            color, radius = "#d58b35", 7
+        else:
+            color, radius = "#b8c5d2", 3
+        d.ellipse((x-radius, y-radius, x+radius, y+radius), fill=color,
+                  outline="#ffffff" if radius > 3 else color, width=2 if radius > 3 else 1)
+
+    flagged = frame.loc[frame["Q4_집중구간"] != "70% 미만"].sort_values(
+        ["Q4_최대항목비중", "행정동_코드"], ascending=[False, True]
+    )
+    assert len(flagged) == 24
+    for n, (_, row) in enumerate(flagged.iterrows()):
+        column, line = divmod(n, 12)
+        x, y = 1090 + column * 470, 180 + line * 65
+        color = "#b63838" if row["Q4_집중구간"] == "90% 이상" else "#d58b35"
+        d.ellipse((x, y + 7, x + 15, y + 22), fill=color)
+        name = row["행정동_코드_명"].replace("?", "·")
+        category = row["Q4_최대지출항목"].replace("_", "·")
+        d.text((x + 22, y), f"{name} {row['Q4_최대항목비중']:.1%}", fill="#17243a", font=body)
+        d.text((x + 22, y + 29), category, fill="#64748b", font=small)
+    d.text((75, 945), "점의 위치는 행정동 대표 좌표입니다. 행정동 경계나 가맹점 위치를 뜻하지 않습니다.", fill="#566579", font=small)
+    d.text((75, 978), "집중도는 해당 동의 최대 지출 항목 ÷ 전체 지출입니다. 높은 집중도는 오류나 특정 기업의 원인을 입증하지 않습니다.", fill="#566579", font=small)
+    im.save(FIGURES / "Q4_행정동_고집중_위치도.png")
+
+
+def food_coffee_chart(frame: pd.DataFrame, rho: float, rho_other: float) -> None:
     im = Image.new("RGB", (1100, 660), "#ffffff")
     d = ImageDraw.Draw(im)
     title, body, small = font(25), font(17), font(14)
     d.text((70, 25), "행정동 음식 지출과 커피·음료 상권 매출", fill="#17243a", font=title)
-    d.text((70, 64), f"2025 Q4 · 커피 매출이 관측된 {len(frame)}개 동 · 스피어만 ρ={rho:.3f} · 원 크기=커피 점포 수", fill="#566579", font=small)
+    d.text((70, 64), f"2025 Q4 · 전체 {len(frame)}개 동 ρ={rho:.3f} · 집중도 70% 미만만 ρ={rho_other:.3f}", fill="#566579", font=small)
     left, right, top, bottom = 110, 1010, 115, 535
     d.rectangle((left, top, right, bottom), outline="#a9b8ca", width=2)
     x_values = frame["음식_지출_총금액"].map(lambda n: math.log10(n + 1))
@@ -85,11 +142,14 @@ def food_coffee_chart(frame: pd.DataFrame, rho: float) -> None:
     for row in frame.itertuples():
         x, y = xy(row.음식_지출_총금액, row.coffee_sales)
         radius = min(15, 3 + math.sqrt(row.coffee_shops) / 2)
-        od.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(43, 108, 176, 110))
+        flagged = row.Q4_집중구간 != "70% 미만"
+        od.ellipse((x - radius, y - radius, x + radius, y + radius),
+                   fill=(213, 139, 53, 190) if flagged else (43, 108, 176, 110),
+                   outline=(143, 71, 20, 240) if flagged else None, width=2 if flagged else 1)
     im = Image.alpha_composite(im.convert("RGBA"), overlay).convert("RGB")
     d = ImageDraw.Draw(im)
     d.text((310, 575), "행정동 음식 지출 (원, 로그 눈금)", fill="#17243a", font=body)
-    d.text((110, 610), "세로축: 해당 동에 연결된 상권의 커피·음료 추정매출 합계 (원, 로그 눈금)", fill="#566579", font=small)
+    d.text((110, 610), "세로축: 커피·음료 상권 추정매출 (원, 로그) · 주황 원: 한 소비 항목이 70% 이상인 동", fill="#566579", font=small)
     im.save(FIGURES / "Q4_행정동_음식지출_커피매출.png")
 
 
@@ -241,6 +301,9 @@ def all_dong_scatter(frame: pd.DataFrame, work_cut: float, young_cut: float) -> 
 
 dong_area = read("OA-22160_영역_행정동.csv")
 consumption = read("OA-22166_소비_행정동.csv")
+category_columns = [col for col in consumption if col.endswith("_지출_총금액")]
+assert len(category_columns) == 10
+assert (consumption[category_columns].sum(axis=1) == consumption["지출_총금액"]).all()
 district_consumption = read("OA-22167_소비_자치구.csv")
 dong_foot = read("OA-22178_길단위인구_행정동.csv")
 dong_resident = read("OA-22183_상주인구_행정동.csv")
@@ -255,8 +318,47 @@ assert trade_area["상권_코드"].is_unique
 assert trade_area["행정동_코드"].isin(dong_area["행정동_코드"]).all()
 
 consumption_q4 = q4(consumption)
-dong = consumption_q4[["행정동_코드", "행정동_코드_명", "지출_총금액",
-                       "음식_지출_총금액", "식료품_지출_총금액", "여가_문화_지출_총금액"]].copy()
+assert len(consumption_q4) == 425 and consumption_q4["행정동_코드"].is_unique
+assert consumption.groupby("행정동_코드")["기준_년분기_코드"].nunique().eq(4).all()
+dong = consumption_q4[["행정동_코드", "행정동_코드_명", "지출_총금액"] + category_columns].copy()
+dong["Q4_최대지출항목"] = dong[category_columns].idxmax(axis=1).str.removesuffix("_지출_총금액")
+dong["Q4_최대항목비중"] = dong[category_columns].max(axis=1) / dong["지출_총금액"]
+dong["Q4_집중구간"] = dong["Q4_최대항목비중"].map(concentration_band)
+dong["교통_여가_기타제외_지출_총금액"] = dong["지출_총금액"] - dong[[
+    "교통_지출_총금액", "여가_문화_지출_총금액", "기타_지출_총금액"
+]].sum(axis=1)
+dong["음식_식료품_지출_총금액"] = dong["음식_지출_총금액"] + dong["식료품_지출_총금액"]
+
+# Annual shares use the sum of the four quarters, not the mean of percentages.
+annual = consumption.groupby("행정동_코드", as_index=False)[["지출_총금액"] + category_columns].sum()
+annual["연간_최대지출항목"] = annual[category_columns].idxmax(axis=1).str.removesuffix("_지출_총금액")
+annual["연간_최대항목비중"] = annual[category_columns].max(axis=1) / annual["지출_총금액"]
+annual["연간_집중구간"] = annual["연간_최대항목비중"].map(concentration_band)
+annual = annual[["행정동_코드", "지출_총금액", "연간_최대지출항목", "연간_최대항목비중", "연간_집중구간"]].rename(
+    columns={"지출_총금액": "2025_연간_지출_총금액"}
+)
+quarterly = consumption[["행정동_코드", "기준_년분기_코드", "지출_총금액"] + category_columns].copy()
+quarterly["최대항목비중"] = quarterly[category_columns].max(axis=1) / quarterly["지출_총금액"]
+quarterly["최대지출항목"] = quarterly[category_columns].idxmax(axis=1)
+persistence = quarterly.groupby("행정동_코드").agg(
+    집중70_분기수=("최대항목비중", lambda s: int((s >= .70).sum())),
+    최대항목_종류수=("최대지출항목", "nunique"),
+).reset_index()
+dong = dong.merge(annual, on="행정동_코드", validate="one_to_one")
+dong = dong.merge(persistence, on="행정동_코드", validate="one_to_one")
+iqr_q1, iqr_q3 = dong["지출_총금액"].quantile([.25, .75])
+iqr_limit = iqr_q3 + 1.5 * (iqr_q3 - iqr_q1)
+dong["Q4_전체지출_IQR상단초과"] = dong["지출_총금액"] > iqr_limit
+assert (dong["연간_집중구간"] == "70~90% 미만").sum() == 16
+assert (dong["연간_집중구간"] == "90% 이상").sum() == 8
+assert (dong["Q4_집중구간"] == "70~90% 미만").sum() == 15
+assert (dong["Q4_집중구간"] == "90% 이상").sum() == 9
+assert set(dong.loc[dong["연간_최대항목비중"] >= .70, "행정동_코드"]) == set(
+    dong.loc[dong["Q4_최대항목비중"] >= .70, "행정동_코드"]
+)
+annual_flagged = dong.loc[dong["연간_최대항목비중"] >= .70]
+assert annual_flagged["집중70_분기수"].eq(4).all()
+assert annual_flagged["최대항목_종류수"].eq(1).all()
 dong_foot_q4 = q4(dong_foot)
 foot_columns = ["행정동_코드", "총_유동인구_수", "연령대_20_유동인구_수", "연령대_30_유동인구_수"] + [
     f"{day}_유동인구_수" for day in ("월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일")
@@ -311,18 +413,46 @@ all_dong_scatter(dong, work_cut, young_cut)
 profile_output = dong[["자치구_명", "행정동_코드", "행정동_코드_명", "생활권_프로필", "유형_경계",
                        "총_직장_인구_수", "총_상주인구_수", "직장_상주_비", "총_유동인구_수",
                        "2030_유동비중", "주말_평일_하루유동비", "음식_지출_총금액",
-                       "식료품_지출_총금액", "음식_식료품중_음식비중", "trade_area_count"]].copy()
+                       "식료품_지출_총금액", "음식_식료품중_음식비중", "trade_area_count",
+                       "지출_총금액", "Q4_최대지출항목", "Q4_최대항목비중", "Q4_집중구간",
+                       "연간_최대항목비중", "연간_집중구간"]].copy()
 profile_output["행정동_코드_명"] = profile_output["행정동_코드_명"].str.replace("?", "·", regex=False)
 profile_output = profile_output.rename(columns={"행정동_코드_명": "행정동_명", "trade_area_count": "배정된_상권_수"})
 profile_output["2030_유동비중"] *= 100
 profile_output["음식_식료품중_음식비중"] *= 100
+profile_output["Q4_최대항목비중"] *= 100
+profile_output["연간_최대항목비중"] *= 100
 profile_output = profile_output.rename(columns={"2030_유동비중": "2030_유동비중_퍼센트",
-                                         "음식_식료품중_음식비중": "음식_식료품중_음식비중_퍼센트"})
+                                         "음식_식료품중_음식비중": "음식_식료품중_음식비중_퍼센트",
+                                         "지출_총금액": "Q4_지출_총금액_원",
+                                         "Q4_최대항목비중": "Q4_최대항목비중_퍼센트",
+                                         "연간_최대항목비중": "연간_최대항목비중_퍼센트"})
 profile_output["총_직장_인구_수"] = profile_output["총_직장_인구_수"].astype("Int64")
 profile_output["배정된_상권_수"] = profile_output["배정된_상권_수"].astype("Int64")
 profile_output.sort_values(["자치구_명", "행정동_명"]).to_csv(
     TABLES / "Q4_행정동_생활권_프로필.csv", index=False, encoding="utf-8-sig", float_format="%.4f"
 )
+
+sensitivity_output = dong[["자치구_명", "행정동_코드", "행정동_코드_명", "지출_총금액"] + category_columns + [
+    "Q4_최대지출항목", "Q4_최대항목비중", "Q4_집중구간", "Q4_전체지출_IQR상단초과",
+    "교통_여가_기타제외_지출_총금액", "음식_식료품_지출_총금액",
+    "2025_연간_지출_총금액", "연간_최대지출항목", "연간_최대항목비중", "연간_집중구간",
+    "집중70_분기수", "최대항목_종류수",
+]].copy()
+sensitivity_output["행정동_코드_명"] = sensitivity_output["행정동_코드_명"].str.replace("?", "·", regex=False)
+sensitivity_output["Q4_최대항목비중"] *= 100
+sensitivity_output["연간_최대항목비중"] *= 100
+sensitivity_output = sensitivity_output.rename(columns={
+    "행정동_코드_명": "행정동_명", "지출_총금액": "Q4_지출_총금액_원",
+    "Q4_최대항목비중": "Q4_최대항목비중_퍼센트", "연간_최대항목비중": "연간_최대항목비중_퍼센트",
+})
+sensitivity_output.sort_values(["자치구_명", "행정동_명"]).to_csv(
+    TABLES / "Q4_행정동_지출_민감도.csv", index=False, encoding="utf-8-sig", float_format="%.4f"
+)
+concentration_location_chart(dong.merge(
+    dong_area[["행정동_코드", "엑스좌표_값", "와이좌표_값"]],
+    on="행정동_코드", validate="one_to_one",
+))
 
 foot_q1 = dong_foot.loc[dong_foot["기준_년분기_코드"] == 20251].copy()
 foot_q1["2030_유동비중_Q1"] = (
@@ -357,14 +487,16 @@ dong_industry = panel.groupby(
 # Dong foot traffic is joined once per dong, after the industry aggregation.
 # Summing the same foot-traffic row over industry rows would multiply it.
 dong_industry = dong_industry.merge(
-    dong[["행정동_코드", "음식_지출_총금액", "총_유동인구_수"]],
+    dong[["행정동_코드", "음식_지출_총금액", "총_유동인구_수", "Q4_집중구간"]],
     on="행정동_코드", validate="many_to_one",
 )
 
 shares = {
-    "total": consumption_q4["지출_총금액"].nlargest(5).sum() / consumption_q4["지출_총금액"].sum(),
-    "leisure": consumption_q4["여가_문화_지출_총금액"].nlargest(5).sum() / consumption_q4["여가_문화_지출_총금액"].sum(),
-    "food": consumption_q4["음식_지출_총금액"].nlargest(5).sum() / consumption_q4["음식_지출_총금액"].sum(),
+    "total": dong["지출_총금액"].nlargest(5).sum() / dong["지출_총금액"].sum(),
+    "leisure": dong["여가_문화_지출_총금액"].nlargest(5).sum() / dong["여가_문화_지출_총금액"].sum(),
+    "exclude3": dong["교통_여가_기타제외_지출_총금액"].nlargest(5).sum() / dong["교통_여가_기타제외_지출_총금액"].sum(),
+    "food_grocery": dong["음식_식료품_지출_총금액"].nlargest(5).sum() / dong["음식_식료품_지출_총금액"].sum(),
+    "food": dong["음식_지출_총금액"].nlargest(5).sum() / dong["음식_지출_총금액"].sum(),
 }
 concentration_chart(shares)
 
@@ -372,7 +504,9 @@ coffee = dong_industry.loc[dong_industry["서비스_업종_코드_명"] == "커�
     columns={"trade_sales": "coffee_sales", "trade_shops": "coffee_shops"}
 )
 coffee_rho = coffee[["음식_지출_총금액", "coffee_sales"]].corr(method="spearman").iloc[0, 1]
-food_coffee_chart(coffee, coffee_rho)
+coffee_other = coffee.loc[coffee["Q4_집중구간"] == "70% 미만"]
+coffee_other_rho = coffee_other[["음식_지출_총금액", "coffee_sales"]].corr(method="spearman").iloc[0, 1]
+food_coffee_chart(coffee, coffee_rho, coffee_other_rho)
 coffee_dong = dong.merge(
     coffee[["행정동_코드", "coffee_sales", "coffee_shops"]],
     on="행정동_코드", how="left", validate="one_to_one",
@@ -398,7 +532,9 @@ for name in ("한식음식점", "커피-음료", "호프-간이주점"):
     }
 
 top_total = consumption_q4.nlargest(5, "지출_총금액")
-category_columns = [c for c in consumption_q4.columns if c.endswith("_지출_총금액")]
+flagged_q4 = dong.loc[dong["Q4_집중구간"] != "70% 미만"]
+flagged_annual = dong.loc[dong["연간_집중구간"] != "70% 미만"]
+assert len(flagged_q4) == len(flagged_annual) == 24
 summary = {
     "source_rows": {"dong_area": len(dong_area), "consumption": len(consumption),
                     "district_consumption": len(district_consumption),
@@ -433,6 +569,30 @@ summary = {
                 "top5_shares": {k: round(v, 4) for k, v in shares.items()},
                 "food_vs_foot_spearman": round(dong[["음식_지출_총금액", "총_유동인구_수"]].corr(method="spearman").iloc[0, 1], 4),
                 "category_sum_mismatch_rows": int((consumption_q4[category_columns].sum(axis=1) != consumption_q4["지출_총금액"]).sum())},
+    "q4_concentration": {
+        "annual_70_to_90": int((dong["연간_집중구간"] == "70~90% 미만").sum()),
+        "annual_90_plus": int((dong["연간_집중구간"] == "90% 이상").sum()),
+        "q4_70_to_90": int((dong["Q4_집중구간"] == "70~90% 미만").sum()),
+        "q4_90_plus": int((dong["Q4_집중구간"] == "90% 이상").sum()),
+        "q4_70_plus_share_of_total": round(flagged_q4["지출_총금액"].sum() / dong["지출_총금액"].sum(), 4),
+        "q4_70_plus_share_of_food": round(flagged_q4["음식_지출_총금액"].sum() / dong["음식_지출_총금액"].sum(), 4),
+        "q4_90_plus_share_of_total": round(dong.loc[dong["Q4_집중구간"] == "90% 이상", "지출_총금액"].sum() / dong["지출_총금액"].sum(), 4),
+        "q4_total_iqr_upper_100m_krw": round(iqr_limit / 1e8, 2),
+        "q4_total_iqr_above_count": int(dong["Q4_전체지출_IQR상단초과"].sum()),
+        "q4_iqr_and_category_70_overlap": int(flagged_q4["Q4_전체지출_IQR상단초과"].sum()),
+        "annual_flagged_70_all_four_quarters": int((flagged_annual["집중70_분기수"] == 4).sum()),
+        "annual_flagged_same_category_all_four_quarters": int((flagged_annual["최대항목_종류수"] == 1).sum()),
+        "metrics": {
+            label: {"sum_trillion_krw": round(dong[col].sum() / 1e12, 4),
+                    "median_100m_krw": round(dong[col].median() / 1e8, 2),
+                    "top5_share": round(shares[label], 4),
+                    "top5_names": dong.nlargest(5, col)["행정동_코드_명"].str.replace("?", "·", regex=False).tolist()}
+            for label, col in (("total", "지출_총금액"),
+                               ("exclude3", "교통_여가_기타제외_지출_총금액"),
+                               ("food_grocery", "음식_식료품_지출_총금액"),
+                               ("food", "음식_지출_총금액"))
+        },
+    },
     "top5_total_spend_dongs": [
         {"name": row["행정동_코드_명"], "total_trillion_krw": round(row["지출_총금액"] / 1e12, 3),
          "leisure_share": round(row["여가_문화_지출_총금액"] / row["지출_총금액"], 4)}
@@ -455,6 +615,8 @@ summary = {
                              ("high_food", coffee_dong.loc[coffee_dong["음식_지출_총금액"] >= food_q75]))
     },
     "coffee": {"food_spend_vs_sales_spearman": round(coffee_rho, 4),
+               "food_spend_vs_sales_spearman_below70": round(coffee_other_rho, 4),
+               "below70_dongs_with_coffee_sales": len(coffee_other),
                "food_spend_vs_shops_spearman": round(coffee[["음식_지출_총금액", "coffee_shops"]].corr(method="spearman").iloc[0, 1], 4),
                "dongs_with_at_least_10_shops": int((coffee["coffee_shops"] >= 10).sum()),
                "median_sales_per_shop_krw_at_least_10": round((coffee.loc[coffee["coffee_shops"] >= 10, "coffee_sales"] /
