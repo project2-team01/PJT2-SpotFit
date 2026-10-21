@@ -9,6 +9,8 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
+from eda_final_industry_groups import classification_frame
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw" / "상권"
@@ -104,6 +106,7 @@ foot = read("OA-15568_길단위인구_상권.csv")
 workers = read("OA-15569_직장인구_상권.csv")
 residents = read("OA-15584_상주인구_상권.csv")
 q4 = sales.loc[sales["기준_년분기_코드"] == 20254].copy()
+final_classification = classification_frame(q4[["서비스_업종_코드", "서비스_업종_코드_명"]]).set_index("서비스_업종_코드_명")
 quarter_totals = sales.groupby("기준_년분기_코드")["당월_매출_금액"].sum().sort_index()
 quarter_chart(quarter_totals)
 
@@ -177,7 +180,9 @@ summary = {
         for name, group in area_q4.groupby("상권_구분_코드_명")
     },
     "q4_selected_industries": {
-        name: {"areas": int(industry_q4.loc[name, "areas"]),
+        name: {"common_group": final_classification.loc[name, "공통_그룹"],
+               "consumption_item": final_classification.loc[name, "소비_항목"],
+               "areas": int(industry_q4.loc[name, "areas"]),
                "sales_trillion_krw": round(industry_q4.loc[name, "sales"] / 1e12, 4),
                "shops": int(industry_q4.loc[name, "shops"]),
                "sales_per_shop_krw": round(industry_q4.loc[name, "sales"] / industry_q4.loc[name, "shops"])}

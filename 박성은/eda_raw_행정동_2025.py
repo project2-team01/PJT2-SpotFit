@@ -9,6 +9,8 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
+from eda_final_industry_groups import classification_frame
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -475,6 +477,30 @@ panel = q4(trade_sales).merge(
 )
 assert len(panel) == len(q4(trade_sales))
 assert panel["행정동_코드"].notna().all()
+
+# Apply the team's final 62-industry grouping to observed sales before any
+# 행정동-level aggregation. No-sales combinations remain absent rather than 0.
+classification = classification_frame(panel[["서비스_업종_코드", "서비스_업종_코드_명"]])
+group_panel = panel.merge(classification, on=["서비스_업종_코드", "서비스_업종_코드_명"], validate="many_to_one")
+assert len(group_panel) == len(panel)
+dong_group = group_panel.groupby(
+    ["행정동_코드", "공통_그룹", "소비_항목", "분석_포함"], as_index=False
+).agg(
+    관측_상권_수=("상권_코드", "nunique"), 관측_업종_수=("서비스_업종_코드", "nunique"),
+    관측_점포_수=("전체_점포_수", "sum"), 폐업_점포_수=("폐업_점포_수", "sum"),
+    추정매출_원=("당월_매출_금액", "sum"),
+)
+dong_group = dong_group.merge(
+    dong[["행정동_코드", "행정동_코드_명", "자치구_명"]],
+    on="행정동_코드", how="left", validate="many_to_one",
+)
+assert dong_group["행정동_코드_명"].notna().all()
+assert dong_group["추정매출_원"].sum() == panel["당월_매출_금액"].sum()
+dong_group["행정동_명"] = dong_group["행정동_코드_명"].str.replace("?", "·", regex=False)
+dong_group[["자치구_명", "행정동_코드", "행정동_명", "공통_그룹", "소비_항목", "분석_포함",
+            "관측_상권_수", "관측_업종_수", "관측_점포_수", "폐업_점포_수", "추정매출_원"]].sort_values(
+    ["자치구_명", "행정동_명", "공통_그룹", "소비_항목"]
+).to_csv(TABLES / "Q4_행정동_최종분류_추정매출.csv", index=False, encoding="utf-8-sig")
 
 dong_industry = panel.groupby(
     ["행정동_코드", "서비스_업종_코드", "서비스_업종_코드_명"], as_index=False

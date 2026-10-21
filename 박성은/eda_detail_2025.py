@@ -9,6 +9,8 @@ from xml.sax.saxutils import escape
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
+from eda_final_industry_groups import GROUPS, classification_frame
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -36,12 +38,12 @@ def font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
 
 
 def food_time_chart(frame: pd.DataFrame) -> None:
-    food = frame.loc[frame["업종_구분"] == "음식·음료"].sort_values("추정매출_원", ascending=False)
-    assert len(food) == 10
+    food = frame.loc[frame["공통_그룹"] == "외식"].sort_values("추정매출_원", ascending=False)
+    assert len(food) == 9
     im = Image.new("RGB", (1800, 890), "white")
     d = ImageDraw.Draw(im)
     title, head, body, small = font(34), font(20), font(20), font(16)
-    d.text((65, 28), "음식·음료 10개 업종의 매출 시간대", fill="#17243a", font=title)
+    d.text((65, 28), "외식 9개 업종의 매출 시간대", fill="#17243a", font=title)
     d.text((65, 78), "2025 Q4 · 각 시간대 금액 ÷ 해당 업종의 관측 추정매출 합계", fill="#566579", font=small)
     for x, label in ((65, "업종"), (255, "상권"), (350, "점포"), (535, "점심 11~14시"),
                      (1025, "저녁 17~24시"), (1515, "점포당 비교 매출")):
@@ -62,7 +64,34 @@ def food_time_chart(frame: pd.DataFrame) -> None:
             d.text((x + 305, y + 7), f"{value:.1f}%", fill="#334155", font=body)
         d.text((1575, y + 8), f"{row.점포당_매출_원_비교용 / 1e6:.1f}", fill="#334155", font=body)
     d.text((65, 835), "점포당 비교 매출 = 관측 업종 매출 합계 / 같은 행의 점포 수 합계. 개별 가게 매출이나 순이익이 아님.", fill="#566579", font=small)
-    im.save(FIGURES / "Q4_음식음료_10업종_시간대.png")
+    im.save(FIGURES / "Q4_외식_9업종_시간대.png")
+
+
+def final_group_chart(frame: pd.DataFrame) -> None:
+    """Show all supplied rows, including the separately flagged ecommerce row."""
+    im = Image.new("RGB", (1750, 1120), "white")
+    d = ImageDraw.Draw(im)
+    title, head, body, small = font(35), font(21), font(19), font(16)
+    d.text((65, 25), "최종 분류별 Q4 관측 추정매출", fill="#17243a", font=title)
+    d.text((65, 76), "61개 분석 업종 + 전자상거래업 1개 별도 표시 · 서울 상권 업종별 매출 합계", fill="#566579", font=small)
+    for x, label in ((65, "공통 그룹"), (290, "소비 항목"), (580, "업종 수"), (775, "추정매출 규모"), (1465, "매출액")):
+        d.text((x, 125), label, fill="#334155", font=head)
+    d.line((65, 165, 1680, 165), fill="#cbd5e1", width=2)
+    maximum = frame["추정매출_원"].max()
+    for i, (_, row) in enumerate(frame.iterrows()):
+        y = 180 + i * 61
+        if i % 2 == 0:
+            d.rectangle((60, y - 2, 1685, y + 54), fill="#f8fafc")
+        color = "#94a3b8" if not row["분석_포함"] else "#218c80"
+        d.text((65, y + 10), row["공통_그룹"], fill="#17243a", font=body)
+        d.text((290, y + 10), row["소비_항목"], fill="#334155", font=body)
+        d.text((603, y + 10), str(row["업종_수"]), fill="#334155", font=body)
+        d.rounded_rectangle((775, y + 16, 1395, y + 37), radius=5, fill="#e8edf3")
+        width = max(3, 620 * row["추정매출_원"] / maximum)
+        d.rounded_rectangle((775, y + 16, 775 + width, y + 37), radius=5, fill=color)
+        d.text((1465, y + 10), f"{row['추정매출_원'] / 1e12:.3f}조", fill="#334155", font=body)
+    d.text((65, 1070), "출처: OA-15572 추정매출·OA-15577 점포 (2025 Q4). 그룹 매출은 창업 수익성 순위가 아닙니다.", fill="#566579", font=small)
+    im.save(FIGURES / "Q4_최종분류_그룹별_추정매출.png")
 
 
 def age_mix_chart(city_shares: dict[str, list[float]], dong: pd.DataFrame) -> None:
@@ -196,18 +225,38 @@ industry["업종_구분"] = industry["서비스_업종_코드"].str[:3].map(
 )
 assert industry["업종_구분"].value_counts().to_dict() == {"소매": 31, "서비스": 21, "음식·음료": 10}
 industry["업종_명"] = industry["서비스_업종_코드_명"]
+classification = classification_frame(industry)
+classification.to_csv(TABLES / "Q4_최종_업종_소비항목_분류표.csv", index=False, encoding="utf-8-sig")
+industry = industry.merge(classification, on=["서비스_업종_코드", "서비스_업종_코드_명"], validate="one_to_one")
+assert industry["분석_포함"].sum() == 61
+assert industry.loc[~industry["분석_포함"], "업종_명"].tolist() == ["전자상거래업"]
 industry["점포당_매출_원_비교용"] = industry["추정매출_원"] / industry["관측_점포_수"].replace(0, float("nan"))
 industry["평일_매출비중_퍼센트"] = industry["평일_매출_원"] / industry["추정매출_원"] * 100
 industry["점심_매출비중_퍼센트"] = industry["점심_매출_원"] / industry["추정매출_원"] * 100
 industry["저녁_매출비중_퍼센트"] = (
     industry["저녁_17_21_매출_원"] + industry["저녁_21_24_매출_원"]
 ) / industry["추정매출_원"] * 100
-industry = industry.sort_values(["업종_구분", "추정매출_원"], ascending=[True, False])
-industry_out = industry[["서비스_업종_코드", "업종_구분", "업종_명", "관측_상권_수", "관측_점포_수",
+industry = industry.sort_values(["공통_그룹", "소비_항목", "추정매출_원"], ascending=[True, True, False])
+industry_out = industry[["서비스_업종_코드", "업종_구분", "공통_그룹", "소비_항목", "분석_포함", "업종_명", "관측_상권_수", "관측_점포_수",
                          "추정매출_원", "점포당_매출_원_비교용", "평일_매출비중_퍼센트",
                          "점심_매출비중_퍼센트", "저녁_매출비중_퍼센트"]].copy()
 industry_out.to_csv(TABLES / "Q4_62개_업종_현황.csv", index=False, encoding="utf-8-sig", float_format="%.2f")
 food_time_chart(industry)
+group_panel = panel.merge(classification, on=["서비스_업종_코드", "서비스_업종_코드_명"], validate="many_to_one")
+group_summary = group_panel.groupby(["공통_그룹", "소비_항목", "분석_포함"], as_index=False).agg(
+    관측_상권_수=("상권_코드", "nunique"), 관측_점포_수=("전체_점포_수", "sum"),
+    추정매출_원=("당월_매출_금액", "sum"),
+)
+group_counts = classification.groupby(["공통_그룹", "소비_항목", "분석_포함"], as_index=False).size().rename(columns={"size": "업종_수"})
+group_summary = group_summary.merge(group_counts, on=["공통_그룹", "소비_항목", "분석_포함"], validate="one_to_one")
+group_order = {(group, item): i for i, (group, item, _) in enumerate(GROUPS)}
+group_summary["분류_순서"] = [group_order[(group, item)] for group, item in zip(group_summary["공통_그룹"], group_summary["소비_항목"])]
+group_summary = group_summary.sort_values("분류_순서")
+assert group_summary["업종_수"].tolist() == [len(items) for _, _, items in GROUPS]
+assert group_summary["추정매출_원"].sum() == panel["당월_매출_금액"].sum()
+group_summary["전체62_매출비중_퍼센트"] = group_summary["추정매출_원"] / group_summary["추정매출_원"].sum() * 100
+group_summary.to_csv(TABLES / "Q4_최종분류_그룹별_현황.csv", index=False, encoding="utf-8-sig", float_format="%.2f")
+final_group_chart(group_summary)
 
 area = read("OA-22160_영역_행정동.csv")
 foot = read("OA-22178_길단위인구_행정동.csv")
@@ -279,10 +328,17 @@ summary = {
     "q4_store_industries": stores_q4["서비스_업종_코드"].nunique(),
     "q4_sales_rows": len(panel),
     "industry_groups": industry["업종_구분"].value_counts().to_dict(),
-    "food_10": industry.loc[industry["업종_구분"] == "음식·음료", [
+    "final_group_counts": {row.소비_항목: int(row.업종_수) for row in group_summary.itertuples(index=False)},
+    "included_sales_trillion_krw": round(group_summary.loc[group_summary["분석_포함"], "추정매출_원"].sum() / 1e12, 4),
+    "excluded_ecommerce_sales_trillion_krw": round(group_summary.loc[~group_summary["분석_포함"], "추정매출_원"].sum() / 1e12, 4),
+    "external_food_9": industry.loc[industry["공통_그룹"] == "외식", [
         "업종_명", "관측_상권_수", "관측_점포_수", "추정매출_원",
         "점심_매출비중_퍼센트", "저녁_매출비중_퍼센트"
     ]].sort_values("추정매출_원", ascending=False).round(2).to_dict("records"),
+    "pub_1": industry.loc[industry["소비_항목"] == "주점", [
+        "업종_명", "관측_상권_수", "관측_점포_수", "추정매출_원",
+        "점심_매출비중_퍼센트", "저녁_매출비중_퍼센트"
+    ]].round(2).to_dict("records"),
     "age_quality": age_quality,
     "city_age_shares_percent": {k: [round(x, 2) for x in v] for k, v in city_shares.items()},
     "age_map_dongs": len(dong),
