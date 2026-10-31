@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotFit 상권 데이터 분석 대시보드 (2025Q4)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-600: #475569;
+            --gray-800: #1e293b;
+            --card-bg: #ffffff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        body { background-color: #f8fafc; color: var(--dark); line-height: 1.6; padding-bottom: 60px; }
+        header { background: white; border-bottom: 1px solid var(--gray-200); padding: 24px 32px; position: sticky; top: 0; z-index: 50; }
+        .header-inner { max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo-area h1 { font-size: 22px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+        .logo-area p { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
+        .timestamp-badge { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 500; }
+        
+        .container { max-width: 1300px; margin: 24px auto; padding: 0 24px; width: 100%; }
+        
+        .tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--gray-200); margin-bottom: 24px; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 15px; font-weight: 600; color: var(--gray-600); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 24px; margin-bottom: 24px; }
+        
+        .card { background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px; }
+        .card-title { font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .card-desc { font-size: 13px; color: var(--gray-600); margin-bottom: 16px; }
+        
+        .metric-card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
+        .metric-label { font-size: 13px; color: var(--gray-600); font-weight: 500; }
+        .metric-val { font-size: 28px; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0; }
+        .metric-sub { font-size: 12px; color: #64748b; }
+        
+        .interpretation-box { background: #f8fafc; border-left: 4px solid var(--primary); padding: 12px 16px; border-radius: 4px; font-size: 14px; color: #334155; margin-top: 16px; }
+        .interpretation-box strong { color: var(--primary); }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; margin-top: 8px; }
+        th { background: #f8fafc; padding: 10px 12px; border-bottom: 1px solid var(--gray-200); color: #475569; font-weight: 600; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        tr:hover td { background: #f8fafc; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #e0f2fe; color: #075985; }
+        
+        .chart-img { width: 100%; border-radius: 8px; border: 1px solid var(--gray-200); margin-top: 8px; }
+        
+        .bar-container { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .bar-label { width: 110px; font-size: 13px; color: var(--gray-800); }
+        .bar-bg { flex: 1; background: var(--gray-100); height: 18px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s; }
+        .bar-val { width: 100px; font-size: 12px; text-align: right; color: var(--gray-600); }
+
+        .table-scroll-container { overflow: auto; position: relative; border: 1px solid var(--gray-200); border-radius: 8px; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+        .table-scroll-container table { margin-top: 0; width: 100%; }
+        .table-scroll-container thead th { position: sticky; top: 0; z-index: 10; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .scroll-hint { font-size: 12px; color: var(--gray-600); margin-top: 4px; margin-bottom: 6px; font-weight: 500; }
+
+        /* 화면 폭 768px 이하 반응형 미디어 쿼리 */
+        @media (max-width: 768px) {
+            header { padding: 16px; }
+            .header-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .container { padding: 0 12px; margin: 16px auto; }
+            .tabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 6px; gap: 4px; }
+            .tab-btn { padding: 8px 12px; font-size: 13px; }
+            .grid-4 { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+            .grid-2 { grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+            .card { padding: 16px; margin-bottom: 16px; }
+            .metric-card { padding: 14px; }
+            .metric-val { font-size: 22px; }
+            .card-title { font-size: 15px; }
+            .card-desc { font-size: 12px; margin-bottom: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="logo-area">
+            <h1>SpotFit 상권 분석 및 데이터 프로파일링 대시보드</h1>
+            <p>서울시 전체 1,650개 상권 및 소상공인 점포 원천 데이터 품질·특성 분석 대시보드</p>
+        </div>
+        <div class="timestamp-badge">
+            기준 시점: 소상공인 점포 (2025-12-31) | 상권 추정매출 (2025Q4)
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('tab-quality')">1. 데이터 품질 점검</button>
+        <button class="tab-btn" onclick="openTab('tab-geo')">2. 지역 및 업종 분포</button>
+        <button class="tab-btn" onclick="openTab('tab-sales')">3. 매출 및 이상치 분석</button>
+        <button class="tab-btn" onclick="openTab('tab-readiness')">4. 상권 특성 데이터 준비도</button>
+    </div>
+
+    <!-- TAB 1: 데이터 품질 점검 -->
+    <div id="tab-quality" class="tab-content active">
+        <div class="grid-4">
+            <div class="metric-card">
+                <div class="metric-label">소상공인 전체 점포 수</div>
+                <div class="metric-val">534,978개</div>
+                <div class="metric-sub">기준: 2025-12-31 시점 상가업소 데이터 수록 점포</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">행정동 코드 일치성</div>
+                <div class="metric-val">425개 동</div>
+                <div class="metric-sub">대응 전 428개 동 → 마스터 425개 동 일치</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">복합 속성 중복 점포</div>
+                <div class="metric-val">0.626%</div>
+                <div class="metric-sub">3,348건 (상호+주소+층+호+소분류)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">지리 좌표 서울 경계 내</div>
+                <div class="metric-val">99.99%</div>
+                <div class="metric-sub">534,898건 (경계 외: 80건, 0.015%)</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">원천 데이터 파일별 정합성 프로파일 (10개 파일)</div>
+                <div class="card-desc">MANIFEST.csv 기준 행수와 실제 원천 파일 행수 대조 결과 (소비 데이터 포함)</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>파일명</th>
+                                <th class="text-right">실제 행수</th>
+                                <th class="text-center">일치여부</th>
+                                <th>기준 키</th>
+                                <th>단위</th>
+                                <th class="text-right">결측치 수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>소상공인_상가정보_서울.csv</strong></td>
+                                <td class="text-right">534,978</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>상가업소번호</td>
+                                <td>점포 (건)</td>
+                                <td class="text-right">2,586,358</td>
+                            </tr><tr>
+                                <td><strong>OA-15560_영역_상권.csv</strong></td>
+                                <td class="text-right">1,650</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>상권_코드</td>
+                                <td>상권 영역</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15568_길단위인구_상권.csv</strong></td>
+                                <td class="text-right">6,595</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드</td>
+                                <td>인구수 (명)</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15569_직장인구_상권.csv</strong></td>
+                                <td class="text-right">6,564</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드</td>
+                                <td>인구수 (명)</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15572_추정매출_상권.csv</strong></td>
+                                <td class="text-right">85,732</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드+서비스_업종_코드</td>
+                                <td>금액 (원) / 건수</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15576_상권변화지표_상권.csv</strong></td>
+                                <td class="text-right">6,600</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드</td>
+                                <td>지표값 / 구분</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15577_점포_상권.csv</strong></td>
+                                <td class="text-right">304,775</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드+서비스_업종_코드</td>
+                                <td>개수</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-15580_집객시설_상권.csv</strong></td>
+                                <td class="text-right">6,312</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드</td>
+                                <td>개수</td>
+                                <td class="text-right">102,500</td>
+                            </tr><tr>
+                                <td><strong>OA-15584_상주인구_상권.csv</strong></td>
+                                <td class="text-right">6,532</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+상권_코드</td>
+                                <td>인구수 (명)</td>
+                                <td class="text-right">0</td>
+                            </tr><tr>
+                                <td><strong>OA-22166_소비_행정동.csv</strong></td>
+                                <td class="text-right">1,700</td>
+                                <td class="text-center"><span class="badge badge-success">일치</span></td>
+                                <td>기준_년분기_코드+행정동_코드</td>
+                                <td>지출금액 (원)</td>
+                                <td class="text-right">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 10개 원천 파일의 실제 행 수가 매니페스트 기준과 정확히 일치하며 고유 기준 키의 유일성이 확인되었습니다.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">점포 층 정보 분류 및 분포 (파이차트 미사용)</div>
+                <div class="card-desc">전체 점포 대비 비중 및 층 정보 입력 점포 기준 비중 분모 구분</div>
+                
+                
+                <div class="bar-container">
+                    <div class="bar-label">미입력(결측)</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 35.14%;"></div>
+                    </div>
+                    <div class="bar-val">187,990건 (35.1%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">지상 1층</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 32.78%;"></div>
+                    </div>
+                    <div class="bar-val">175,357건 (32.8%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">지상 2층</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 11.19%;"></div>
+                    </div>
+                    <div class="bar-val">59,848건 (11.2%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">지상 3층 이상</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 18.89%;"></div>
+                    </div>
+                    <div class="bar-val">101,080건 (18.9%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">지하층</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 1.96%;"></div>
+                    </div>
+                    <div class="bar-val">10,480건 (2.0%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">호수오기/미분류</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 0.04%;"></div>
+                    </div>
+                    <div class="bar-val">218건 (0.0%)</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">기타/미분류</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 0.0%;"></div>
+                    </div>
+                    <div class="bar-val">5건 (0.0%)</div>
+                </div>
+                
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 전체 점포(534,978건) 기준으로는 결측이 35.1%(187,990건)로 가장 많으나, 층 정보가 입력된 점포(346,988건) 기준으로는 지상 1층(175,357건)이 50.5%로 1위를 차지합니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: 지역 및 업종 분포 -->
+    <div id="tab-geo" class="tab-content">
+        <div class="grid-4">
+            <div class="metric-card">
+                <div class="metric-label">자치구 평균 점포 수</div>
+                <div class="metric-val">21,399.12개</div>
+                <div class="metric-sub">최다: 강남구 (64,123개)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">자치구 최소 점포 수</div>
+                <div class="metric-val">10,339개</div>
+                <div class="metric-sub">최소: 도봉구 (10,339개)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">행정동 평균 점포 수</div>
+                <div class="metric-val">1,258.77개</div>
+                <div class="metric-sub">중위수: 912.0개 (왜도: 4.19)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">행정동 최다 점포 지역</div>
+                <div class="metric-val">13,380개</div>
+                <div class="metric-sub">강남구 역삼1동 (최소: 송파구 잠실7동 126개)</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">자치구별 소상공인 점포 수 현황</div>
+                <div class="card-desc">2025-12-31 시점 25개 자치구 점포 수 순위</div>
+                <img src="../images/eda_stage1/01_자치구별_점포수_분포.png" alt="자치구별 점포수 분포" class="chart-img">
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 강남구(64,123개), 서초구(38,892개), 송파구(33,559개)의 동남권 3개 구가 서울 전체 점포의 25.5%를 점유하고 있습니다.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">구별 최고 특화 업종 (25개 자치구)</div>
+                <div class="card-desc">해당 구의 업종 점포 수와 구 내 비중, 서울 대비 입지계수(LQ) (입지계수 1.5 이상 '서울 대비 고특화', 1.2 이상 1.5 미만 '서울 대비 특화', 1.2 미만 '평균 수준')</div>
+                <div class="scroll-hint">표 안에서 스크롤하면 전체 25행을 볼 수 있습니다</div>
+                <div class="table-scroll-container" style="max-height: 480px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>자치구명</th>
+                                <th>최고 특화 업종</th>
+                                <th class="text-right">해당구 점포수</th>
+                                <th class="text-right">구 내 비중</th>
+                                <th class="text-right">입지계수 (LQ)</th>
+                                <th>해석</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>강남구</strong></td>
+                                <td>과학·기술</td>
+                                <td class="text-right">18,854개</td>
+                                <td class="text-right">29.40%</td>
+                                <td class="text-right"><strong>1.687</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>강동구</strong></td>
+                                <td>보건의료</td>
+                                <td class="text-right">882개</td>
+                                <td class="text-right">4.63%</td>
+                                <td class="text-right"><strong>1.315</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>강북구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">1,683개</td>
+                                <td class="text-right">13.82%</td>
+                                <td class="text-right"><strong>1.433</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>강서구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">3,203개</td>
+                                <td class="text-right">12.31%</td>
+                                <td class="text-right"><strong>1.275</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>관악구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">630개</td>
+                                <td class="text-right">3.27%</td>
+                                <td class="text-right"><strong>1.977</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>광진구</strong></td>
+                                <td>예술·스포츠</td>
+                                <td class="text-right">918개</td>
+                                <td class="text-right">5.10%</td>
+                                <td class="text-right"><strong>1.333</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>구로구</strong></td>
+                                <td>예술·스포츠</td>
+                                <td class="text-right">822개</td>
+                                <td class="text-right">4.59%</td>
+                                <td class="text-right"><strong>1.200</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>금천구</strong></td>
+                                <td>과학·기술</td>
+                                <td class="text-right">5,814개</td>
+                                <td class="text-right">32.78%</td>
+                                <td class="text-right"><strong>1.881</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>노원구</strong></td>
+                                <td>교육</td>
+                                <td class="text-right">2,022개</td>
+                                <td class="text-right">13.12%</td>
+                                <td class="text-right"><strong>1.554</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>도봉구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">1,404개</td>
+                                <td class="text-right">13.58%</td>
+                                <td class="text-right"><strong>1.407</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>동대문구</strong></td>
+                                <td>소매</td>
+                                <td class="text-right">4,585개</td>
+                                <td class="text-right">27.50%</td>
+                                <td class="text-right"><strong>1.318</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>동작구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">383개</td>
+                                <td class="text-right">2.79%</td>
+                                <td class="text-right"><strong>1.689</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>마포구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">1,192개</td>
+                                <td class="text-right">3.91%</td>
+                                <td class="text-right"><strong>2.366</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>서대문구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">363개</td>
+                                <td class="text-right">2.66%</td>
+                                <td class="text-right"><strong>1.611</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>서초구</strong></td>
+                                <td>과학·기술</td>
+                                <td class="text-right">12,633개</td>
+                                <td class="text-right">32.48%</td>
+                                <td class="text-right"><strong>1.863</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>성동구</strong></td>
+                                <td>과학·기술</td>
+                                <td class="text-right">3,829개</td>
+                                <td class="text-right">22.23%</td>
+                                <td class="text-right"><strong>1.275</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>성북구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">1,915개</td>
+                                <td class="text-right">12.33%</td>
+                                <td class="text-right"><strong>1.277</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>송파구</strong></td>
+                                <td>예술·스포츠</td>
+                                <td class="text-right">1,561개</td>
+                                <td class="text-right">4.65%</td>
+                                <td class="text-right"><strong>1.217</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>양천구</strong></td>
+                                <td>교육</td>
+                                <td class="text-right">2,535개</td>
+                                <td class="text-right">16.22%</td>
+                                <td class="text-right"><strong>1.922</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>영등포구</strong></td>
+                                <td>시설관리·임대</td>
+                                <td class="text-right">1,614개</td>
+                                <td class="text-right">5.68%</td>
+                                <td class="text-right"><strong>1.253</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>용산구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">449개</td>
+                                <td class="text-right">2.86%</td>
+                                <td class="text-right"><strong>1.730</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>은평구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">2,052개</td>
+                                <td class="text-right">12.89%</td>
+                                <td class="text-right"><strong>1.336</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr><tr>
+                                <td><strong>종로구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">715개</td>
+                                <td class="text-right">3.44%</td>
+                                <td class="text-right"><strong>2.080</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>중구</strong></td>
+                                <td>숙박</td>
+                                <td class="text-right">713개</td>
+                                <td class="text-right">2.96%</td>
+                                <td class="text-right"><strong>1.789</strong></td>
+                                <td><span class="badge badge-danger">서울 대비 고특화</span></td>
+                            </tr><tr>
+                                <td><strong>중랑구</strong></td>
+                                <td>수리·개인</td>
+                                <td class="text-right">2,091개</td>
+                                <td class="text-right">14.35%</td>
+                                <td class="text-right"><strong>1.487</strong></td>
+                                <td><span class="badge badge-info">서울 대비 특화</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 25개 자치구별로 가장 특화된 업종의 점포 수와 구 내 비중을 도출하였으며, 금천구 과학·기술은 LQ 1.88, 양천구 교육은 LQ 1.92입니다.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">권역별 10대 대분류 점포 분포 교차표</div>
+            <div class="card-desc">5대 권역과 10대 대분류 교차 집계 및 총계</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>권역</th>
+                            <th class="text-right">과학·기술</th><th class="text-right">교육</th><th class="text-right">보건의료</th><th class="text-right">부동산</th><th class="text-right">소매</th><th class="text-right">수리·개인</th><th class="text-right">숙박</th><th class="text-right">시설관리·임대</th><th class="text-right">예술·스포츠</th><th class="text-right">음식</th><th class="text-right">총계</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>도심권</strong></td>
+                            <td class="text-right">9,877</td><td class="text-right">2,534</td><td class="text-right">1,344</td><td class="text-right">1,998</td><td class="text-right">17,096</td><td class="text-right">3,371</td><td class="text-right">1,877</td><td class="text-right">3,633</td><td class="text-right">1,279</td><td class="text-right">17,613</td><td class="text-right">60,622</td>
+                        </tr><tr>
+                            <td><strong>동남권</strong></td>
+                            <td class="text-right">39,204</td><td class="text-right">15,163</td><td class="text-right">6,687</td><td class="text-right">8,575</td><td class="text-right">27,326</td><td class="text-right">12,891</td><td class="text-right">1,464</td><td class="text-right">7,061</td><td class="text-right">5,297</td><td class="text-right">31,952</td><td class="text-right">155,620</td>
+                        </tr><tr>
+                            <td><strong>동북권</strong></td>
+                            <td class="text-right">12,605</td><td class="text-right">10,161</td><td class="text-right">4,295</td><td class="text-right">5,462</td><td class="text-right">27,923</td><td class="text-right">14,548</td><td class="text-right">1,656</td><td class="text-right">4,407</td><td class="text-right">5,568</td><td class="text-right">33,320</td><td class="text-right">119,945</td>
+                        </tr><tr>
+                            <td><strong>서남권</strong></td>
+                            <td class="text-right">23,053</td><td class="text-right">11,737</td><td class="text-right">4,648</td><td class="text-right">6,285</td><td class="text-right">28,117</td><td class="text-right">14,743</td><td class="text-right">2,122</td><td class="text-right">6,375</td><td class="text-right">6,189</td><td class="text-right">35,486</td><td class="text-right">138,755</td>
+                        </tr><tr>
+                            <td><strong>서북권</strong></td>
+                            <td class="text-right">8,522</td><td class="text-right">5,563</td><td class="text-right">1,866</td><td class="text-right">2,739</td><td class="text-right">11,170</td><td class="text-right">6,073</td><td class="text-right">1,722</td><td class="text-right">2,755</td><td class="text-right">2,113</td><td class="text-right">17,513</td><td class="text-right">60,036</td>
+                        </tr><tr>
+                            <td><strong>총계</strong></td>
+                            <td class="text-right">93,261</td><td class="text-right">45,158</td><td class="text-right">18,840</td><td class="text-right">25,059</td><td class="text-right">111,632</td><td class="text-right">51,626</td><td class="text-right">8,841</td><td class="text-right">24,231</td><td class="text-right">20,446</td><td class="text-right">135,884</td><td class="text-right">534,978</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">층분류별 10대 대분류 점포 분포 교차표</div>
+            <div class="card-desc">7개 층분류와 10대 대분류 교차 집계 및 총계</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>층 분류</th>
+                            <th class="text-right">과학·기술</th><th class="text-right">교육</th><th class="text-right">보건의료</th><th class="text-right">부동산</th><th class="text-right">소매</th><th class="text-right">수리·개인</th><th class="text-right">숙박</th><th class="text-right">시설관리·임대</th><th class="text-right">예술·스포츠</th><th class="text-right">음식</th><th class="text-right">총계</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>미입력(결측)</strong></td>
+                            <td class="text-right">35,492</td><td class="text-right">14,522</td><td class="text-right">5,882</td><td class="text-right">8,706</td><td class="text-right">45,226</td><td class="text-right">17,705</td><td class="text-right">5,427</td><td class="text-right">9,907</td><td class="text-right">5,795</td><td class="text-right">39,328</td><td class="text-right">187,990</td>
+                        </tr><tr>
+                            <td><strong>지상 1층</strong></td>
+                            <td class="text-right">8,894</td><td class="text-right">4,806</td><td class="text-right">1,003</td><td class="text-right">11,920</td><td class="text-right">41,502</td><td class="text-right">20,410</td><td class="text-right">597</td><td class="text-right">3,029</td><td class="text-right">5,175</td><td class="text-right">78,021</td><td class="text-right">175,357</td>
+                        </tr><tr>
+                            <td><strong>지상 2층</strong></td>
+                            <td class="text-right">10,860</td><td class="text-right">9,331</td><td class="text-right">4,439</td><td class="text-right">1,314</td><td class="text-right">8,322</td><td class="text-right">6,849</td><td class="text-right">784</td><td class="text-right">3,075</td><td class="text-right">3,063</td><td class="text-right">11,811</td><td class="text-right">59,848</td>
+                        </tr><tr>
+                            <td><strong>지상 3층 이상</strong></td>
+                            <td class="text-right">36,604</td><td class="text-right">15,625</td><td class="text-right">7,472</td><td class="text-right">2,889</td><td class="text-right">14,645</td><td class="text-right">5,849</td><td class="text-right">1,894</td><td class="text-right">7,596</td><td class="text-right">4,206</td><td class="text-right">4,300</td><td class="text-right">101,080</td>
+                        </tr><tr>
+                            <td><strong>지하층</strong></td>
+                            <td class="text-right">1,323</td><td class="text-right">842</td><td class="text-right">37</td><td class="text-right">225</td><td class="text-right">1,902</td><td class="text-right">803</td><td class="text-right">136</td><td class="text-right">612</td><td class="text-right">2,203</td><td class="text-right">2,397</td><td class="text-right">10,480</td>
+                        </tr><tr>
+                            <td><strong>호수오기/미분류</strong></td>
+                            <td class="text-right">86</td><td class="text-right">31</td><td class="text-right">7</td><td class="text-right">5</td><td class="text-right">34</td><td class="text-right">10</td><td class="text-right">3</td><td class="text-right">12</td><td class="text-right">4</td><td class="text-right">26</td><td class="text-right">218</td>
+                        </tr><tr>
+                            <td><strong>기타/미분류</strong></td>
+                            <td class="text-right">2</td><td class="text-right">1</td><td class="text-right">0</td><td class="text-right">0</td><td class="text-right">1</td><td class="text-right">0</td><td class="text-right">0</td><td class="text-right">0</td><td class="text-right">0</td><td class="text-right">1</td><td class="text-right">5</td>
+                        </tr><tr>
+                            <td><strong>총계</strong></td>
+                            <td class="text-right">93,261</td><td class="text-right">45,158</td><td class="text-right">18,840</td><td class="text-right">25,059</td><td class="text-right">111,632</td><td class="text-right">51,626</td><td class="text-right">8,841</td><td class="text-right">24,231</td><td class="text-right">20,446</td><td class="text-right">135,884</td><td class="text-right">534,978</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">자치구별 10대 대분류 점포 수 교차표 (25개 구 전체)</div>
+            <div class="card-desc">25개 자치구와 10대 대분류 교차 집계 및 총계</div>
+            <div class="scroll-hint">표 안에서 스크롤하면 전체 26행을 볼 수 있습니다</div>
+            <div class="table-scroll-container" style="max-height: 500px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>자치구</th>
+                            <th class="text-right">과학·기술</th><th class="text-right">교육</th><th class="text-right">보건의료</th><th class="text-right">부동산</th><th class="text-right">소매</th><th class="text-right">수리·개인</th><th class="text-right">숙박</th><th class="text-right">시설관리·임대</th><th class="text-right">예술·스포츠</th><th class="text-right">음식</th><th class="text-right">총계</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>강남구</strong></td>
+                            <td class="text-right">18,854</td><td class="text-right">6,219</td><td class="text-right">3,067</td><td class="text-right">3,665</td><td class="text-right">9,869</td><td class="text-right">4,681</td><td class="text-right">511</td><td class="text-right">3,132</td><td class="text-right">1,779</td><td class="text-right">12,346</td><td class="text-right">64,123</td>
+                        </tr><tr>
+                            <td><strong>강동구</strong></td>
+                            <td class="text-right">1,681</td><td class="text-right">2,008</td><td class="text-right">882</td><td class="text-right">1,121</td><td class="text-right">4,232</td><td class="text-right">2,310</td><td class="text-right">276</td><td class="text-right">724</td><td class="text-right">875</td><td class="text-right">4,937</td><td class="text-right">19,046</td>
+                        </tr><tr>
+                            <td><strong>강북구</strong></td>
+                            <td class="text-right">980</td><td class="text-right">764</td><td class="text-right">477</td><td class="text-right">532</td><td class="text-right">2,860</td><td class="text-right">1,683</td><td class="text-right">183</td><td class="text-right">434</td><td class="text-right">649</td><td class="text-right">3,612</td><td class="text-right">12,174</td>
+                        </tr><tr>
+                            <td><strong>강서구</strong></td>
+                            <td class="text-right">3,683</td><td class="text-right">2,273</td><td class="text-right">958</td><td class="text-right">1,280</td><td class="text-right">5,117</td><td class="text-right">3,203</td><td class="text-right">261</td><td class="text-right">1,283</td><td class="text-right">1,145</td><td class="text-right">6,825</td><td class="text-right">26,028</td>
+                        </tr><tr>
+                            <td><strong>관악구</strong></td>
+                            <td class="text-right">1,878</td><td class="text-right">1,567</td><td class="text-right">687</td><td class="text-right">908</td><td class="text-right">3,845</td><td class="text-right">2,491</td><td class="text-right">630</td><td class="text-right">713</td><td class="text-right">1,091</td><td class="text-right">5,473</td><td class="text-right">19,283</td>
+                        </tr><tr>
+                            <td><strong>광진구</strong></td>
+                            <td class="text-right">2,088</td><td class="text-right">1,389</td><td class="text-right">592</td><td class="text-right">868</td><td class="text-right">4,073</td><td class="text-right">2,077</td><td class="text-right">302</td><td class="text-right">784</td><td class="text-right">918</td><td class="text-right">4,925</td><td class="text-right">18,016</td>
+                        </tr><tr>
+                            <td><strong>구로구</strong></td>
+                            <td class="text-right">2,926</td><td class="text-right">1,319</td><td class="text-right">563</td><td class="text-right">704</td><td class="text-right">4,104</td><td class="text-right">1,849</td><td class="text-right">228</td><td class="text-right">835</td><td class="text-right">822</td><td class="text-right">4,571</td><td class="text-right">17,921</td>
+                        </tr><tr>
+                            <td><strong>금천구</strong></td>
+                            <td class="text-right">5,814</td><td class="text-right">835</td><td class="text-right">361</td><td class="text-right">737</td><td class="text-right">3,312</td><td class="text-right">1,432</td><td class="text-right">122</td><td class="text-right">984</td><td class="text-right">545</td><td class="text-right">3,592</td><td class="text-right">17,734</td>
+                        </tr><tr>
+                            <td><strong>노원구</strong></td>
+                            <td class="text-right">1,022</td><td class="text-right">2,022</td><td class="text-right">724</td><td class="text-right">581</td><td class="text-right">3,529</td><td class="text-right">1,804</td><td class="text-right">103</td><td class="text-right">444</td><td class="text-right">860</td><td class="text-right">4,327</td><td class="text-right">15,416</td>
+                        </tr><tr>
+                            <td><strong>도봉구</strong></td>
+                            <td class="text-right">856</td><td class="text-right">904</td><td class="text-right">369</td><td class="text-right">450</td><td class="text-right">2,648</td><td class="text-right">1,404</td><td class="text-right">59</td><td class="text-right">337</td><td class="text-right">539</td><td class="text-right">2,773</td><td class="text-right">10,339</td>
+                        </tr><tr>
+                            <td><strong>동대문구</strong></td>
+                            <td class="text-right">1,330</td><td class="text-right">1,239</td><td class="text-right">592</td><td class="text-right">820</td><td class="text-right">4,585</td><td class="text-right">1,860</td><td class="text-right">355</td><td class="text-right">592</td><td class="text-right">694</td><td class="text-right">4,606</td><td class="text-right">16,673</td>
+                        </tr><tr>
+                            <td><strong>동작구</strong></td>
+                            <td class="text-right">1,198</td><td class="text-right">1,395</td><td class="text-right">579</td><td class="text-right">758</td><td class="text-right">3,027</td><td class="text-right">1,519</td><td class="text-right">383</td><td class="text-right">465</td><td class="text-right">649</td><td class="text-right">3,751</td><td class="text-right">13,724</td>
+                        </tr><tr>
+                            <td><strong>마포구</strong></td>
+                            <td class="text-right">5,704</td><td class="text-right">2,634</td><td class="text-right">752</td><td class="text-right">1,161</td><td class="text-right">4,837</td><td class="text-right">2,690</td><td class="text-right">1,192</td><td class="text-right">1,616</td><td class="text-right">900</td><td class="text-right">9,002</td><td class="text-right">30,488</td>
+                        </tr><tr>
+                            <td><strong>서대문구</strong></td>
+                            <td class="text-right">1,515</td><td class="text-right">1,341</td><td class="text-right">435</td><td class="text-right">624</td><td class="text-right">2,812</td><td class="text-right">1,331</td><td class="text-right">363</td><td class="text-right">592</td><td class="text-right">525</td><td class="text-right">4,096</td><td class="text-right">13,634</td>
+                        </tr><tr>
+                            <td><strong>서초구</strong></td>
+                            <td class="text-right">12,633</td><td class="text-right">3,820</td><td class="text-right">1,527</td><td class="text-right">2,094</td><td class="text-right">6,491</td><td class="text-right">2,472</td><td class="text-right">308</td><td class="text-right">1,819</td><td class="text-right">1,082</td><td class="text-right">6,646</td><td class="text-right">38,892</td>
+                        </tr><tr>
+                            <td><strong>성동구</strong></td>
+                            <td class="text-right">3,829</td><td class="text-right">1,193</td><td class="text-right">446</td><td class="text-right">782</td><td class="text-right">3,312</td><td class="text-right">1,714</td><td class="text-right">224</td><td class="text-right">741</td><td class="text-right">521</td><td class="text-right">4,459</td><td class="text-right">17,221</td>
+                        </tr><tr>
+                            <td><strong>성북구</strong></td>
+                            <td class="text-right">1,280</td><td class="text-right">1,670</td><td class="text-right">546</td><td class="text-right">754</td><td class="text-right">3,471</td><td class="text-right">1,915</td><td class="text-right">260</td><td class="text-right">485</td><td class="text-right">646</td><td class="text-right">4,508</td><td class="text-right">15,535</td>
+                        </tr><tr>
+                            <td><strong>송파구</strong></td>
+                            <td class="text-right">6,036</td><td class="text-right">3,116</td><td class="text-right">1,211</td><td class="text-right">1,695</td><td class="text-right">6,734</td><td class="text-right">3,428</td><td class="text-right">369</td><td class="text-right">1,386</td><td class="text-right">1,561</td><td class="text-right">8,023</td><td class="text-right">33,559</td>
+                        </tr><tr>
+                            <td><strong>양천구</strong></td>
+                            <td class="text-right">1,358</td><td class="text-right">2,535</td><td class="text-right">685</td><td class="text-right">747</td><td class="text-right">3,321</td><td class="text-right">1,899</td><td class="text-right">95</td><td class="text-right">481</td><td class="text-right">815</td><td class="text-right">3,690</td><td class="text-right">15,626</td>
+                        </tr><tr>
+                            <td><strong>영등포구</strong></td>
+                            <td class="text-right">6,196</td><td class="text-right">1,813</td><td class="text-right">815</td><td class="text-right">1,151</td><td class="text-right">5,391</td><td class="text-right">2,350</td><td class="text-right">403</td><td class="text-right">1,614</td><td class="text-right">1,122</td><td class="text-right">7,584</td><td class="text-right">28,439</td>
+                        </tr><tr>
+                            <td><strong>용산구</strong></td>
+                            <td class="text-right">2,231</td><td class="text-right">880</td><td class="text-right">294</td><td class="text-right">804</td><td class="text-right">3,945</td><td class="text-right">1,140</td><td class="text-right">449</td><td class="text-right">561</td><td class="text-right">334</td><td class="text-right">5,063</td><td class="text-right">15,701</td>
+                        </tr><tr>
+                            <td><strong>은평구</strong></td>
+                            <td class="text-right">1,303</td><td class="text-right">1,588</td><td class="text-right">679</td><td class="text-right">954</td><td class="text-right">3,521</td><td class="text-right">2,052</td><td class="text-right">167</td><td class="text-right">547</td><td class="text-right">688</td><td class="text-right">4,415</td><td class="text-right">15,914</td>
+                        </tr><tr>
+                            <td><strong>종로구</strong></td>
+                            <td class="text-right">2,948</td><td class="text-right">1,074</td><td class="text-right">481</td><td class="text-right">558</td><td class="text-right">5,547</td><td class="text-right">1,102</td><td class="text-right">715</td><td class="text-right">1,377</td><td class="text-right">502</td><td class="text-right">6,500</td><td class="text-right">20,804</td>
+                        </tr><tr>
+                            <td><strong>중구</strong></td>
+                            <td class="text-right">4,698</td><td class="text-right">580</td><td class="text-right">569</td><td class="text-right">636</td><td class="text-right">7,604</td><td class="text-right">1,129</td><td class="text-right">713</td><td class="text-right">1,695</td><td class="text-right">443</td><td class="text-right">6,050</td><td class="text-right">24,117</td>
+                        </tr><tr>
+                            <td><strong>중랑구</strong></td>
+                            <td class="text-right">1,220</td><td class="text-right">980</td><td class="text-right">549</td><td class="text-right">675</td><td class="text-right">3,445</td><td class="text-right">2,091</td><td class="text-right">170</td><td class="text-right">590</td><td class="text-right">741</td><td class="text-right">4,110</td><td class="text-right">14,571</td>
+                        </tr><tr>
+                            <td><strong>총계</strong></td>
+                            <td class="text-right">93,261</td><td class="text-right">45,158</td><td class="text-right">18,840</td><td class="text-right">25,059</td><td class="text-right">111,632</td><td class="text-right">51,626</td><td class="text-right">8,841</td><td class="text-right">24,231</td><td class="text-right">20,446</td><td class="text-right">135,884</td><td class="text-right">534,978</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">25개 자치구 × 10대 대분류 전체 입지계수(LQ) 매트릭스</div>
+            <div class="card-desc">서울 전체 대비 각 자치구의 업종별 특화도 (LQ 1.0 초과는 평균 대비 특화)</div>
+            <div class="scroll-hint">표 안에서 스크롤하면 전체 25행을 볼 수 있습니다</div>
+            <div class="table-scroll-container" style="max-height: 500px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>자치구</th>
+                            <th class="text-right">과학·기술</th><th class="text-right">교육</th><th class="text-right">보건의료</th><th class="text-right">부동산</th><th class="text-right">소매</th><th class="text-right">수리·개인</th><th class="text-right">숙박</th><th class="text-right">시설관리·임대</th><th class="text-right">예술·스포츠</th><th class="text-right">음식</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>강남구</strong></td>
+                            <td class="text-right">1.687</td><td class="text-right">1.149</td><td class="text-right">1.358</td><td class="text-right">1.220</td><td class="text-right">0.738</td><td class="text-right">0.756</td><td class="text-right">0.482</td><td class="text-right">1.078</td><td class="text-right">0.726</td><td class="text-right">0.758</td>
+                        </tr><tr>
+                            <td><strong>강동구</strong></td>
+                            <td class="text-right">0.506</td><td class="text-right">1.249</td><td class="text-right">1.315</td><td class="text-right">1.257</td><td class="text-right">1.065</td><td class="text-right">1.257</td><td class="text-right">0.877</td><td class="text-right">0.839</td><td class="text-right">1.202</td><td class="text-right">1.021</td>
+                        </tr><tr>
+                            <td><strong>강북구</strong></td>
+                            <td class="text-right">0.462</td><td class="text-right">0.743</td><td class="text-right">1.113</td><td class="text-right">0.933</td><td class="text-right">1.126</td><td class="text-right">1.433</td><td class="text-right">0.910</td><td class="text-right">0.787</td><td class="text-right">1.395</td><td class="text-right">1.168</td>
+                        </tr><tr>
+                            <td><strong>강서구</strong></td>
+                            <td class="text-right">0.812</td><td class="text-right">1.035</td><td class="text-right">1.045</td><td class="text-right">1.050</td><td class="text-right">0.942</td><td class="text-right">1.275</td><td class="text-right">0.607</td><td class="text-right">1.088</td><td class="text-right">1.151</td><td class="text-right">1.032</td>
+                        </tr><tr>
+                            <td><strong>관악구</strong></td>
+                            <td class="text-right">0.559</td><td class="text-right">0.963</td><td class="text-right">1.012</td><td class="text-right">1.005</td><td class="text-right">0.956</td><td class="text-right">1.339</td><td class="text-right">1.977</td><td class="text-right">0.816</td><td class="text-right">1.480</td><td class="text-right">1.117</td>
+                        </tr><tr>
+                            <td><strong>광진구</strong></td>
+                            <td class="text-right">0.665</td><td class="text-right">0.913</td><td class="text-right">0.933</td><td class="text-right">1.029</td><td class="text-right">1.083</td><td class="text-right">1.195</td><td class="text-right">1.014</td><td class="text-right">0.961</td><td class="text-right">1.333</td><td class="text-right">1.076</td>
+                        </tr><tr>
+                            <td><strong>구로구</strong></td>
+                            <td class="text-right">0.937</td><td class="text-right">0.872</td><td class="text-right">0.892</td><td class="text-right">0.839</td><td class="text-right">1.097</td><td class="text-right">1.069</td><td class="text-right">0.770</td><td class="text-right">1.029</td><td class="text-right">1.200</td><td class="text-right">1.004</td>
+                        </tr><tr>
+                            <td><strong>금천구</strong></td>
+                            <td class="text-right">1.881</td><td class="text-right">0.558</td><td class="text-right">0.578</td><td class="text-right">0.887</td><td class="text-right">0.895</td><td class="text-right">0.837</td><td class="text-right">0.416</td><td class="text-right">1.225</td><td class="text-right">0.804</td><td class="text-right">0.797</td>
+                        </tr><tr>
+                            <td><strong>노원구</strong></td>
+                            <td class="text-right">0.380</td><td class="text-right">1.554</td><td class="text-right">1.334</td><td class="text-right">0.805</td><td class="text-right">1.097</td><td class="text-right">1.213</td><td class="text-right">0.404</td><td class="text-right">0.636</td><td class="text-right">1.460</td><td class="text-right">1.105</td>
+                        </tr><tr>
+                            <td><strong>도봉구</strong></td>
+                            <td class="text-right">0.475</td><td class="text-right">1.036</td><td class="text-right">1.013</td><td class="text-right">0.929</td><td class="text-right">1.227</td><td class="text-right">1.407</td><td class="text-right">0.345</td><td class="text-right">0.720</td><td class="text-right">1.364</td><td class="text-right">1.056</td>
+                        </tr><tr>
+                            <td><strong>동대문구</strong></td>
+                            <td class="text-right">0.458</td><td class="text-right">0.880</td><td class="text-right">1.008</td><td class="text-right">1.050</td><td class="text-right">1.318</td><td class="text-right">1.156</td><td class="text-right">1.288</td><td class="text-right">0.784</td><td class="text-right">1.089</td><td class="text-right">1.088</td>
+                        </tr><tr>
+                            <td><strong>동작구</strong></td>
+                            <td class="text-right">0.501</td><td class="text-right">1.204</td><td class="text-right">1.198</td><td class="text-right">1.179</td><td class="text-right">1.057</td><td class="text-right">1.147</td><td class="text-right">1.689</td><td class="text-right">0.748</td><td class="text-right">1.237</td><td class="text-right">1.076</td>
+                        </tr><tr>
+                            <td><strong>마포구</strong></td>
+                            <td class="text-right">1.073</td><td class="text-right">1.024</td><td class="text-right">0.700</td><td class="text-right">0.813</td><td class="text-right">0.760</td><td class="text-right">0.914</td><td class="text-right">2.366</td><td class="text-right">1.170</td><td class="text-right">0.772</td><td class="text-right">1.162</td>
+                        </tr><tr>
+                            <td><strong>서대문구</strong></td>
+                            <td class="text-right">0.637</td><td class="text-right">1.165</td><td class="text-right">0.906</td><td class="text-right">0.977</td><td class="text-right">0.988</td><td class="text-right">1.012</td><td class="text-right">1.611</td><td class="text-right">0.959</td><td class="text-right">1.008</td><td class="text-right">1.183</td>
+                        </tr><tr>
+                            <td><strong>서초구</strong></td>
+                            <td class="text-right">1.863</td><td class="text-right">1.164</td><td class="text-right">1.115</td><td class="text-right">1.149</td><td class="text-right">0.800</td><td class="text-right">0.659</td><td class="text-right">0.479</td><td class="text-right">1.033</td><td class="text-right">0.728</td><td class="text-right">0.673</td>
+                        </tr><tr>
+                            <td><strong>성동구</strong></td>
+                            <td class="text-right">1.275</td><td class="text-right">0.821</td><td class="text-right">0.735</td><td class="text-right">0.969</td><td class="text-right">0.922</td><td class="text-right">1.031</td><td class="text-right">0.787</td><td class="text-right">0.950</td><td class="text-right">0.792</td><td class="text-right">1.019</td>
+                        </tr><tr>
+                            <td><strong>성북구</strong></td>
+                            <td class="text-right">0.473</td><td class="text-right">1.274</td><td class="text-right">0.998</td><td class="text-right">1.036</td><td class="text-right">1.071</td><td class="text-right">1.277</td><td class="text-right">1.013</td><td class="text-right">0.689</td><td class="text-right">1.088</td><td class="text-right">1.142</td>
+                        </tr><tr>
+                            <td><strong>송파구</strong></td>
+                            <td class="text-right">1.032</td><td class="text-right">1.100</td><td class="text-right">1.025</td><td class="text-right">1.078</td><td class="text-right">0.962</td><td class="text-right">1.059</td><td class="text-right">0.665</td><td class="text-right">0.912</td><td class="text-right">1.217</td><td class="text-right">0.941</td>
+                        </tr><tr>
+                            <td><strong>양천구</strong></td>
+                            <td class="text-right">0.499</td><td class="text-right">1.922</td><td class="text-right">1.245</td><td class="text-right">1.021</td><td class="text-right">1.019</td><td class="text-right">1.259</td><td class="text-right">0.368</td><td class="text-right">0.680</td><td class="text-right">1.365</td><td class="text-right">0.930</td>
+                        </tr><tr>
+                            <td><strong>영등포구</strong></td>
+                            <td class="text-right">1.250</td><td class="text-right">0.755</td><td class="text-right">0.814</td><td class="text-right">0.864</td><td class="text-right">0.908</td><td class="text-right">0.856</td><td class="text-right">0.857</td><td class="text-right">1.253</td><td class="text-right">1.032</td><td class="text-right">1.050</td>
+                        </tr><tr>
+                            <td><strong>용산구</strong></td>
+                            <td class="text-right">0.815</td><td class="text-right">0.664</td><td class="text-right">0.532</td><td class="text-right">1.093</td><td class="text-right">1.204</td><td class="text-right">0.752</td><td class="text-right">1.730</td><td class="text-right">0.789</td><td class="text-right">0.557</td><td class="text-right">1.270</td>
+                        </tr><tr>
+                            <td><strong>은평구</strong></td>
+                            <td class="text-right">0.470</td><td class="text-right">1.182</td><td class="text-right">1.212</td><td class="text-right">1.280</td><td class="text-right">1.060</td><td class="text-right">1.336</td><td class="text-right">0.635</td><td class="text-right">0.759</td><td class="text-right">1.131</td><td class="text-right">1.092</td>
+                        </tr><tr>
+                            <td><strong>종로구</strong></td>
+                            <td class="text-right">0.813</td><td class="text-right">0.612</td><td class="text-right">0.657</td><td class="text-right">0.573</td><td class="text-right">1.278</td><td class="text-right">0.549</td><td class="text-right">2.080</td><td class="text-right">1.461</td><td class="text-right">0.631</td><td class="text-right">1.230</td>
+                        </tr><tr>
+                            <td><strong>중구</strong></td>
+                            <td class="text-right">1.117</td><td class="text-right">0.285</td><td class="text-right">0.670</td><td class="text-right">0.563</td><td class="text-right">1.511</td><td class="text-right">0.485</td><td class="text-right">1.789</td><td class="text-right">1.552</td><td class="text-right">0.481</td><td class="text-right">0.988</td>
+                        </tr><tr>
+                            <td><strong>중랑구</strong></td>
+                            <td class="text-right">0.480</td><td class="text-right">0.797</td><td class="text-right">1.070</td><td class="text-right">0.989</td><td class="text-right">1.133</td><td class="text-right">1.487</td><td class="text-right">0.706</td><td class="text-right">0.894</td><td class="text-right">1.331</td><td class="text-right">1.111</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: 매출 및 이상치 분석 -->
+    <div id="tab-sales" class="tab-content">
+        <div class="grid-4">
+            <div class="metric-card">
+                <div class="metric-label">2025Q4 분석 상권 수</div>
+                <div class="metric-val">1,565개</div>
+                <div class="metric-sub">전체 1,650개 상권 중 매출 보유율 94.85%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">62개 업종 상관계수 (r)</div>
+                <div class="metric-val">0.6340</div>
+                <div class="metric-sub">주 분석 (매출-점포 62개 업종 일치)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">민감도 상관계수 (r)</div>
+                <div class="metric-val">0.7063</div>
+                <div class="metric-sub">상위 1% 제외 시 r = 0.7063</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">순위 상관계수 (rho)</div>
+                <div class="metric-val">0.8632</div>
+                <div class="metric-sub">스피어만 순위상관계수 0.8632</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">점포 수(62개 업종) vs 추정매출액 상관 및 민감도</div>
+                <div class="card-desc">좌측: 전체 상권 vs 우측: 상위 1% 이상치 제외 상권</div>
+                <img src="../images/eda_stage1/03_상권_점포수_매출_상관및민감도.png" alt="상관 및 민감도 분석" class="chart-img">
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 62개 업종 기준 점포 수와 추정매출액 간 선형 상관계수는 전체 0.6340이나, 상위 1% 이상치 상권을 제외한 민감도 분석에서는 상관계수가 0.7063로 변화합니다. 단, 상위 1% 제외 민감도는 매출액 기준으로 상위 상권을 제외한 결과이므로 추천 모델 적용 시 해석에 주의가 필요합니다.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">단일 상권 1곳 매출 집중도 Top 10 업종</div>
+                <div class="card-desc">서울 전체 매출 중 단 1곳 상권이 차지하는 비중 및 매출보유 상권수</div>
+                <img src="../images/eda_stage1/04_업종별_단일상권_집중도_Top10.png" alt="업종별 집중도" class="chart-img">
+                <div class="interpretation-box">
+                    <strong>쉬운 해석:</strong> 수산물판매 업종은 노량진역(노량진) 1곳 상권이 서울시 전체의 82.0%(1.15조 원)를 차지하여 가장 두드러진 단일상권 쏠림을 보이는 반면, 총매출 1위인 한식음식점 업종은 1위 상권(명동 남대문 북창동 다동 무교동 관광특구) 비중이 3.1%이며 매출 보유 상권 수가 1406개로 나타납니다.
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">매출 과대표 상권 Top 5 (회귀선 상단, 62개 업종 기준)</div>
+                <div class="card-desc">점포 수 대비 추정매출액이 비정상적으로 높게 형성된 상권</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>상권명</th>
+                                <th class="text-right">점포수</th>
+                                <th class="text-right">추정매출액</th>
+                                <th>매출 1위 업종</th>
+                                <th>점포 1위 업종</th>
+                                <th>추정 가설</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>노량진역(노량진)</strong></td>
+                                <td class="text-right">1,666개</td>
+                                <td class="text-right">12,616.3억원</td>
+                                <td>수산물판매 (91.1%)</td>
+                                <td>수산물판매 (50.1%)</td>
+                                <td><small style="color:#64748b;">[가설] 수산물 대량 유통 및 도매 결제 집중</small></td>
+                            </tr><tr>
+                                <td><strong>용산전자상가(용산역)</strong></td>
+                                <td class="text-right">2,543개</td>
+                                <td class="text-right">6,689.9억원</td>
+                                <td>컴퓨터및주변장치판매 (69.1%)</td>
+                                <td>컴퓨터및주변장치판매 (69.8%)</td>
+                                <td><small style="color:#64748b;">[가설] 고가 전자기기 및 컴퓨터 하드웨어 B2B 결제 집중</small></td>
+                            </tr><tr>
+                                <td><strong>가산디지털단지</strong></td>
+                                <td class="text-right">6,671개</td>
+                                <td class="text-right">8,043.8억원</td>
+                                <td>일반의류 (65.8%)</td>
+                                <td>일반의류 (14.9%)</td>
+                                <td><small style="color:#64748b;">[가설] 대형 아웃렛 및 패션 도소매 유통 결제 집중</small></td>
+                            </tr><tr>
+                                <td><strong>가락시장</strong></td>
+                                <td class="text-right">2,914개</td>
+                                <td class="text-right">4,592.1억원</td>
+                                <td>반찬가게 (66.7%)</td>
+                                <td>청과상 (61.4%)</td>
+                                <td><small style="color:#64748b;">[가설] 도매시장 내 식자재 및 청과·반찬 도소매 유통 결제 집중</small></td>
+                            </tr><tr>
+                                <td><strong>잠실 관광특구</strong></td>
+                                <td class="text-right">3,051개</td>
+                                <td class="text-right">3,809.3억원</td>
+                                <td>일반의류 (48.5%)</td>
+                                <td>일반의류 (18.6%)</td>
+                                <td><small style="color:#64748b;">[가설] 복합쇼핑몰 및 패션 소비 결제 집중</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">매출 과소표 상권 Top 5 (회귀선 하단, 62개 업종 기준)</div>
+                <div class="card-desc">점포 수는 대규모 밀집했으나 추정매출액이 낮게 집계되는 상권</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>상권명</th>
+                                <th class="text-right">점포수</th>
+                                <th class="text-right">추정매출액</th>
+                                <th>매출 1위 업종</th>
+                                <th>점포 1위 업종</th>
+                                <th>추정 가설</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>동대문패션타운 관광특구</strong></td>
+                                <td class="text-right">12,574개</td>
+                                <td class="text-right">1,516.4억원</td>
+                                <td>일반의류 (55.7%)</td>
+                                <td>일반의류 (85.6%)</td>
+                                <td><small style="color:#64748b;">[가설] 의류 도매 B2B 특성상 계좌이체/현금 결제 비중이 높아 추정매출 포착률이 낮음</small></td>
+                            </tr><tr>
+                                <td><strong>청평화시장</strong></td>
+                                <td class="text-right">2,485개</td>
+                                <td class="text-right">9.3억원</td>
+                                <td>일반의류 (85.5%)</td>
+                                <td>일반의류 (98.4%)</td>
+                                <td><small style="color:#64748b;">[가설] 심야 의류 도매 전문 시장으로 개인/카드 결제 비중이 매우 낮음</small></td>
+                            </tr><tr>
+                                <td><strong>평화시장(남평화시장, 제일평화시장, 신평화패션타운)</strong></td>
+                                <td class="text-right">2,567개</td>
+                                <td class="text-right">202.9억원</td>
+                                <td>일반의류 (96.8%)</td>
+                                <td>일반의류 (95.5%)</td>
+                                <td><small style="color:#64748b;">[가설] 전통 의류 도매 위주 결제 구조로 추정매출 포착 한계</small></td>
+                            </tr><tr>
+                                <td><strong>신당역</strong></td>
+                                <td class="text-right">2,700개</td>
+                                <td class="text-right">453.4억원</td>
+                                <td>일반의류 (42.9%)</td>
+                                <td>일반의류 (72.9%)</td>
+                                <td><small style="color:#64748b;">[가설] 동대문 배후 의류 봉제·도매 연계로 카드 결제 비중 낮음</small></td>
+                            </tr><tr>
+                                <td><strong>문정역</strong></td>
+                                <td class="text-right">2,616개</td>
+                                <td class="text-right">447.3억원</td>
+                                <td>한식음식점 (25.9%)</td>
+                                <td>한식음식점 (11.8%)</td>
+                                <td><small style="color:#64748b;">[가설] 법조타운·오피스 중심 상권으로 주말/야간 소비 제한적</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">행정동 소비 이상치 8곳 실제 집계 내역 (행정동_마스터 소비_이상치 기준)</div>
+            <div class="card-desc">서울시 전체 소비 지출(52.95조원) 중 8개 동이 49.18%를 점유 (값은 일절 변경 없이 이름표 유지)</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>행정동 코드</th>
+                            <th>행정동명</th>
+                            <th class="text-right">2025년 총 지출액</th>
+                            <th class="text-right">지출 규모</th>
+                            <th class="text-right">서울 비중</th>
+                            <th>최대 쏠림 항목</th>
+                            <th class="text-right">항목 비중</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>11140520</code></td>
+                            <td><strong>소공동</strong></td>
+                            <td class="text-right">9,690,910,534,000원</td>
+                            <td class="text-right">9.69조원</td>
+                            <td class="text-right">18.30%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">97.8%</td>
+                        </tr><tr>
+                            <td><code>11530540</code></td>
+                            <td><strong>구로3동</strong></td>
+                            <td class="text-right">7,716,566,651,000원</td>
+                            <td class="text-right">7.72조원</td>
+                            <td class="text-right">14.57%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">99.2%</td>
+                        </tr><tr>
+                            <td><code>11560605</code></td>
+                            <td><strong>문래동</strong></td>
+                            <td class="text-right">6,172,497,607,000원</td>
+                            <td class="text-right">6.17조원</td>
+                            <td class="text-right">11.66%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">99.3%</td>
+                        </tr><tr>
+                            <td><code>11650520</code></td>
+                            <td><strong>서초2동</strong></td>
+                            <td class="text-right">695,943,310,000원</td>
+                            <td class="text-right">0.70조원</td>
+                            <td class="text-right">1.31%</td>
+                            <td>기타</td>
+                            <td class="text-right">90.5%</td>
+                        </tr><tr>
+                            <td><code>11140605</code></td>
+                            <td><strong>을지로동</strong></td>
+                            <td class="text-right">608,651,585,000원</td>
+                            <td class="text-right">0.61조원</td>
+                            <td class="text-right">1.15%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">93.4%</td>
+                        </tr><tr>
+                            <td><code>11170520</code></td>
+                            <td><strong>용산2가동</strong></td>
+                            <td class="text-right">583,265,129,000원</td>
+                            <td class="text-right">0.58조원</td>
+                            <td class="text-right">1.10%</td>
+                            <td>식료품</td>
+                            <td class="text-right">98.7%</td>
+                        </tr><tr>
+                            <td><code>11680656</code></td>
+                            <td><strong>도곡2동</strong></td>
+                            <td class="text-right">292,700,722,000원</td>
+                            <td class="text-right">0.29조원</td>
+                            <td class="text-right">0.55%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">91.0%</td>
+                        </tr><tr>
+                            <td><code>11440610</code></td>
+                            <td><strong>염리동</strong></td>
+                            <td class="text-right">279,782,687,000원</td>
+                            <td class="text-right">0.28조원</td>
+                            <td class="text-right">0.53%</td>
+                            <td>여가·문화</td>
+                            <td class="text-right">95.9%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">62개 업종별 매출 순위 및 단일 상권 집중도 전체 현황</div>
+            <div class="card-desc">2025Q4 추정매출 기준 62개 업종 전체 매출 규모, 유효 상권 수, 1위 상권 편중도</div>
+            <div class="scroll-hint">표 안에서 스크롤하면 전체 62행을 볼 수 있습니다</div>
+            <div class="table-scroll-container" style="max-height: 500px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>순위</th>
+                            <th>업종명</th>
+                            <th>업종코드</th>
+                            <th class="text-right">서울 총매출액</th>
+                            <th class="text-right">매출 상권수</th>
+                            <th>상권수 주의</th>
+                            <th>1위 상권명</th>
+                            <th class="text-right">1위 상권 매출</th>
+                            <th class="text-right">1위 상권 집중도</th>
+                            <th>특화집중 여부</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td><strong>한식음식점</strong></td>
+                            <td><code>CS100001</code></td>
+                            <td class="text-right">3,985,898,301,921원</td>
+                            <td class="text-right">1406개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">123,135,896,699원</td>
+                            <td class="text-right"><strong>3.09%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">2</td>
+                            <td><strong>일반의류</strong></td>
+                            <td><code>CS300011</code></td>
+                            <td class="text-right">2,132,212,624,743원</td>
+                            <td class="text-right">850개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>가산디지털단지</td>
+                            <td class="text-right">529,180,460,200원</td>
+                            <td class="text-right"><strong>24.82%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">3</td>
+                            <td><strong>일반의원</strong></td>
+                            <td><code>CS200006</code></td>
+                            <td class="text-right">1,787,685,318,222원</td>
+                            <td class="text-right">518개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">135,767,729,504원</td>
+                            <td class="text-right"><strong>7.59%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">4</td>
+                            <td><strong>의약품</strong></td>
+                            <td><code>CS300018</code></td>
+                            <td class="text-right">1,426,634,468,592원</td>
+                            <td class="text-right">583개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>휘문고교사거리</td>
+                            <td class="text-right">49,668,000,000원</td>
+                            <td class="text-right"><strong>3.48%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">5</td>
+                            <td><strong>수산물판매</strong></td>
+                            <td><code>CS300008</code></td>
+                            <td class="text-right">1,400,689,731,246원</td>
+                            <td class="text-right">130개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>노량진역(노량진)</td>
+                            <td class="text-right">1,148,993,825,259원</td>
+                            <td class="text-right"><strong>82.03%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">6</td>
+                            <td><strong>청과상</strong></td>
+                            <td><code>CS300009</code></td>
+                            <td class="text-right">1,281,305,234,493원</td>
+                            <td class="text-right">274개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>청량리청과물시장</td>
+                            <td class="text-right">183,825,968,781원</td>
+                            <td class="text-right"><strong>14.35%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">7</td>
+                            <td><strong>반찬가게</strong></td>
+                            <td><code>CS300010</code></td>
+                            <td class="text-right">856,226,080,781원</td>
+                            <td class="text-right">400개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>가락시장</td>
+                            <td class="text-right">306,222,803,666원</td>
+                            <td class="text-right"><strong>35.76%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">8</td>
+                            <td><strong>슈퍼마켓</strong></td>
+                            <td><code>CS300001</code></td>
+                            <td class="text-right">849,778,983,467원</td>
+                            <td class="text-right">888개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>가락시장</td>
+                            <td class="text-right">21,777,728,275원</td>
+                            <td class="text-right"><strong>2.56%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">9</td>
+                            <td><strong>육류판매</strong></td>
+                            <td><code>CS300007</code></td>
+                            <td class="text-right">807,736,979,652원</td>
+                            <td class="text-right">405개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>독산동 우시장</td>
+                            <td class="text-right">198,687,712,787원</td>
+                            <td class="text-right"><strong>24.60%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">10</td>
+                            <td><strong>편의점</strong></td>
+                            <td><code>CS300002</code></td>
+                            <td class="text-right">806,130,121,145원</td>
+                            <td class="text-right">671개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">18,418,817,345원</td>
+                            <td class="text-right"><strong>2.28%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">11</td>
+                            <td><strong>호프-간이주점</strong></td>
+                            <td><code>CS100009</code></td>
+                            <td class="text-right">727,658,898,205원</td>
+                            <td class="text-right">882개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>홍대입구역(홍대)</td>
+                            <td class="text-right">22,310,355,063원</td>
+                            <td class="text-right"><strong>3.07%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">12</td>
+                            <td><strong>일반교습학원</strong></td>
+                            <td><code>CS200001</code></td>
+                            <td class="text-right">701,123,088,884원</td>
+                            <td class="text-right">645개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>은마아파트</td>
+                            <td class="text-right">72,977,777,148원</td>
+                            <td class="text-right"><strong>10.41%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">13</td>
+                            <td><strong>커피-음료</strong></td>
+                            <td><code>CS100010</code></td>
+                            <td class="text-right">686,429,650,341원</td>
+                            <td class="text-right">1069개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">23,547,174,262원</td>
+                            <td class="text-right"><strong>3.43%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">14</td>
+                            <td><strong>컴퓨터및주변장치판매</strong></td>
+                            <td><code>CS300003</code></td>
+                            <td class="text-right">678,032,239,217원</td>
+                            <td class="text-right">89개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>용산전자상가(용산역)</td>
+                            <td class="text-right">462,190,556,477원</td>
+                            <td class="text-right"><strong>68.17%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">15</td>
+                            <td><strong>치과의원</strong></td>
+                            <td><code>CS200007</code></td>
+                            <td class="text-right">451,956,868,408원</td>
+                            <td class="text-right">376개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">17,387,851,070원</td>
+                            <td class="text-right"><strong>3.85%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">16</td>
+                            <td><strong>조명용품</strong></td>
+                            <td><code>CS300036</code></td>
+                            <td class="text-right">396,448,154,343원</td>
+                            <td class="text-right">155개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>구로역</td>
+                            <td class="text-right">97,257,595,876원</td>
+                            <td class="text-right"><strong>24.53%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">17</td>
+                            <td><strong>시계및귀금속</strong></td>
+                            <td><code>CS300017</code></td>
+                            <td class="text-right">395,765,977,273원</td>
+                            <td class="text-right">180개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>종로3가역</td>
+                            <td class="text-right">186,159,760,096원</td>
+                            <td class="text-right"><strong>47.04%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">18</td>
+                            <td><strong>양식음식점</strong></td>
+                            <td><code>CS100004</code></td>
+                            <td class="text-right">373,127,782,711원</td>
+                            <td class="text-right">331개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>이태원 관광특구</td>
+                            <td class="text-right">18,616,130,631원</td>
+                            <td class="text-right"><strong>4.99%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">19</td>
+                            <td><strong>화장품</strong></td>
+                            <td><code>CS300022</code></td>
+                            <td class="text-right">338,727,988,507원</td>
+                            <td class="text-right">485개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">34,025,334,379원</td>
+                            <td class="text-right"><strong>10.05%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">20</td>
+                            <td><strong>일식음식점</strong></td>
+                            <td><code>CS100003</code></td>
+                            <td class="text-right">287,641,673,877원</td>
+                            <td class="text-right">337개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>여의도역(여의도)</td>
+                            <td class="text-right">16,430,958,207원</td>
+                            <td class="text-right"><strong>5.71%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">21</td>
+                            <td><strong>분식전문점</strong></td>
+                            <td><code>CS100008</code></td>
+                            <td class="text-right">281,397,512,910원</td>
+                            <td class="text-right">785개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>고덕역</td>
+                            <td class="text-right">6,910,491,537원</td>
+                            <td class="text-right"><strong>2.46%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">22</td>
+                            <td><strong>중식음식점</strong></td>
+                            <td><code>CS100002</code></td>
+                            <td class="text-right">264,156,022,454원</td>
+                            <td class="text-right">438개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남 마이스 관광특구</td>
+                            <td class="text-right">11,307,589,200원</td>
+                            <td class="text-right"><strong>4.28%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">23</td>
+                            <td><strong>가전제품</strong></td>
+                            <td><code>CS300032</code></td>
+                            <td class="text-right">253,031,507,746원</td>
+                            <td class="text-right">56개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>용산전자상가(용산역)</td>
+                            <td class="text-right">179,602,345,883원</td>
+                            <td class="text-right"><strong>70.98%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">24</td>
+                            <td><strong>문구</strong></td>
+                            <td><code>CS300021</code></td>
+                            <td class="text-right">252,603,433,890원</td>
+                            <td class="text-right">243개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>종로?청계 관광특구</td>
+                            <td class="text-right">30,274,206,862원</td>
+                            <td class="text-right"><strong>11.98%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">25</td>
+                            <td><strong>미용실</strong></td>
+                            <td><code>CS200028</code></td>
+                            <td class="text-right">230,322,706,119원</td>
+                            <td class="text-right">1118개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>압구정로데오역(압구정로데오)</td>
+                            <td class="text-right">8,927,090,936원</td>
+                            <td class="text-right"><strong>3.88%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">26</td>
+                            <td><strong>운동/경기용품</strong></td>
+                            <td><code>CS300024</code></td>
+                            <td class="text-right">214,735,198,073원</td>
+                            <td class="text-right">131개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>언주역(차병원)</td>
+                            <td class="text-right">33,902,478,793원</td>
+                            <td class="text-right"><strong>15.79%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">27</td>
+                            <td><strong>제과점</strong></td>
+                            <td><code>CS100005</code></td>
+                            <td class="text-right">209,457,645,279원</td>
+                            <td class="text-right">430개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>잠실역</td>
+                            <td class="text-right">7,530,520,276원</td>
+                            <td class="text-right"><strong>3.60%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">28</td>
+                            <td><strong>의료기기</strong></td>
+                            <td><code>CS300019</code></td>
+                            <td class="text-right">201,721,201,093원</td>
+                            <td class="text-right">156개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>63빌딩</td>
+                            <td class="text-right">20,502,000,000원</td>
+                            <td class="text-right"><strong>10.16%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">29</td>
+                            <td><strong>자동차수리</strong></td>
+                            <td><code>CS200025</code></td>
+                            <td class="text-right">177,739,209,563원</td>
+                            <td class="text-right">374개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>양천향교역 5번</td>
+                            <td class="text-right">6,492,932,346원</td>
+                            <td class="text-right"><strong>3.65%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">30</td>
+                            <td><strong>패스트푸드점</strong></td>
+                            <td><code>CS100006</code></td>
+                            <td class="text-right">161,943,433,566원</td>
+                            <td class="text-right">402개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>잠실 관광특구</td>
+                            <td class="text-right">7,962,169,696원</td>
+                            <td class="text-right"><strong>4.92%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">31</td>
+                            <td><strong>한의원</strong></td>
+                            <td><code>CS200008</code></td>
+                            <td class="text-right">149,120,875,302원</td>
+                            <td class="text-right">308개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>압구정역</td>
+                            <td class="text-right">4,196,208,936원</td>
+                            <td class="text-right"><strong>2.81%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">32</td>
+                            <td><strong>신발</strong></td>
+                            <td><code>CS300014</code></td>
+                            <td class="text-right">124,562,883,994원</td>
+                            <td class="text-right">129개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>성수동카페거리</td>
+                            <td class="text-right">12,677,014,635원</td>
+                            <td class="text-right"><strong>10.18%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">33</td>
+                            <td><strong>가구</strong></td>
+                            <td><code>CS300031</code></td>
+                            <td class="text-right">122,124,148,036원</td>
+                            <td class="text-right">95개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>논현역</td>
+                            <td class="text-right">18,897,950,937원</td>
+                            <td class="text-right"><strong>15.47%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">34</td>
+                            <td><strong>예술학원</strong></td>
+                            <td><code>CS200003</code></td>
+                            <td class="text-right">113,155,646,706원</td>
+                            <td class="text-right">503개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>선릉역</td>
+                            <td class="text-right">7,181,137,701원</td>
+                            <td class="text-right"><strong>6.35%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">35</td>
+                            <td><strong>노래방</strong></td>
+                            <td><code>CS200037</code></td>
+                            <td class="text-right">100,493,323,252원</td>
+                            <td class="text-right">503개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>잠실새내역(신천)</td>
+                            <td class="text-right">1,826,094,924원</td>
+                            <td class="text-right"><strong>1.82%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">36</td>
+                            <td><strong>안경</strong></td>
+                            <td><code>CS300016</code></td>
+                            <td class="text-right">100,177,124,888원</td>
+                            <td class="text-right">208개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">11,057,699,566원</td>
+                            <td class="text-right"><strong>11.04%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">37</td>
+                            <td><strong>치킨전문점</strong></td>
+                            <td><code>CS100007</code></td>
+                            <td class="text-right">87,362,897,734원</td>
+                            <td class="text-right">503개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">2,690,435,430원</td>
+                            <td class="text-right"><strong>3.08%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">38</td>
+                            <td><strong>미곡판매</strong></td>
+                            <td><code>CS300006</code></td>
+                            <td class="text-right">86,468,371,139원</td>
+                            <td class="text-right">57개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>가락시장</td>
+                            <td class="text-right">24,283,973,049원</td>
+                            <td class="text-right"><strong>28.08%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">39</td>
+                            <td><strong>핸드폰</strong></td>
+                            <td><code>CS300004</code></td>
+                            <td class="text-right">79,477,025,439원</td>
+                            <td class="text-right">175개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강변역(테크노마트)</td>
+                            <td class="text-right">11,624,981,763원</td>
+                            <td class="text-right"><strong>14.63%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">40</td>
+                            <td><strong>스포츠 강습</strong></td>
+                            <td><code>CS200005</code></td>
+                            <td class="text-right">77,238,744,835원</td>
+                            <td class="text-right">480개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>선릉역</td>
+                            <td class="text-right">2,537,189,496원</td>
+                            <td class="text-right"><strong>3.28%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">41</td>
+                            <td><strong>가방</strong></td>
+                            <td><code>CS300015</code></td>
+                            <td class="text-right">72,656,058,330원</td>
+                            <td class="text-right">62개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>영등포역지하도상점가</td>
+                            <td class="text-right">17,834,239,754원</td>
+                            <td class="text-right"><strong>24.55%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">42</td>
+                            <td><strong>스포츠클럽</strong></td>
+                            <td><code>CS200024</code></td>
+                            <td class="text-right">72,336,083,725원</td>
+                            <td class="text-right">277개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>서래마을카페거리(서래마을)</td>
+                            <td class="text-right">3,698,201,889원</td>
+                            <td class="text-right"><strong>5.11%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">43</td>
+                            <td><strong>여관</strong></td>
+                            <td><code>CS200034</code></td>
+                            <td class="text-right">66,787,752,855원</td>
+                            <td class="text-right">205개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>명동 남대문 북창동 다동 무교동 관광특구</td>
+                            <td class="text-right">11,458,254,420원</td>
+                            <td class="text-right"><strong>17.16%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">44</td>
+                            <td><strong>서적</strong></td>
+                            <td><code>CS300020</code></td>
+                            <td class="text-right">66,613,105,452원</td>
+                            <td class="text-right">150개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">10,997,421,861원</td>
+                            <td class="text-right"><strong>16.51%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">45</td>
+                            <td><strong>화초</strong></td>
+                            <td><code>CS300028</code></td>
+                            <td class="text-right">55,514,682,245원</td>
+                            <td class="text-right">299개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>양재시민의숲역(양재동꽃시장, aT센터)</td>
+                            <td class="text-right">14,065,130,489원</td>
+                            <td class="text-right"><strong>25.34%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">46</td>
+                            <td><strong>피부관리실</strong></td>
+                            <td><code>CS200030</code></td>
+                            <td class="text-right">54,215,886,875원</td>
+                            <td class="text-right">404개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">4,085,324,462원</td>
+                            <td class="text-right"><strong>7.54%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">47</td>
+                            <td><strong>인테리어</strong></td>
+                            <td><code>CS300035</code></td>
+                            <td class="text-right">46,465,316,353원</td>
+                            <td class="text-right">185개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>방산종합시장(방산시장)</td>
+                            <td class="text-right">6,385,870,706원</td>
+                            <td class="text-right"><strong>13.74%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">48</td>
+                            <td><strong>완구</strong></td>
+                            <td><code>CS300026</code></td>
+                            <td class="text-right">45,391,851,043원</td>
+                            <td class="text-right">16개</td>
+                            <td><span class="badge badge-warning">주의(50개미만)</span></td>
+                            <td>잠실 관광특구</td>
+                            <td class="text-right">17,790,000,000원</td>
+                            <td class="text-right"><strong>39.19%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">49</td>
+                            <td><strong>외국어학원</strong></td>
+                            <td><code>CS200002</code></td>
+                            <td class="text-right">43,952,372,096원</td>
+                            <td class="text-right">74개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>은마아파트</td>
+                            <td class="text-right">5,363,054,322원</td>
+                            <td class="text-right"><strong>12.20%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">50</td>
+                            <td><strong>PC방</strong></td>
+                            <td><code>CS200019</code></td>
+                            <td class="text-right">41,848,288,717원</td>
+                            <td class="text-right">105개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>한양대앞상점가(한양시장, 왕십리맛골목)</td>
+                            <td class="text-right">2,782,275,621원</td>
+                            <td class="text-right"><strong>6.65%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">51</td>
+                            <td><strong>전자상거래업</strong></td>
+                            <td><code>CS300043</code></td>
+                            <td class="text-right">33,200,512,603원</td>
+                            <td class="text-right">127개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>역삼역</td>
+                            <td class="text-right">3,284,966,332원</td>
+                            <td class="text-right"><strong>9.89%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">52</td>
+                            <td><strong>골프연습장</strong></td>
+                            <td><code>CS200017</code></td>
+                            <td class="text-right">28,406,566,635원</td>
+                            <td class="text-right">140개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>신아타운</td>
+                            <td class="text-right">3,139,433,417원</td>
+                            <td class="text-right"><strong>11.05%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">53</td>
+                            <td><strong>섬유제품</strong></td>
+                            <td><code>CS300027</code></td>
+                            <td class="text-right">28,064,643,255원</td>
+                            <td class="text-right">104개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>종로?청계 관광특구</td>
+                            <td class="text-right">5,436,235,321원</td>
+                            <td class="text-right"><strong>19.37%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">54</td>
+                            <td><strong>세탁소</strong></td>
+                            <td><code>CS200031</code></td>
+                            <td class="text-right">27,273,139,971원</td>
+                            <td class="text-right">430개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>방배역</td>
+                            <td class="text-right">1,157,868,487원</td>
+                            <td class="text-right"><strong>4.25%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">55</td>
+                            <td><strong>당구장</strong></td>
+                            <td><code>CS200016</code></td>
+                            <td class="text-right">27,061,280,878원</td>
+                            <td class="text-right">340개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>잠실새내역(신천)</td>
+                            <td class="text-right">1,345,773,925원</td>
+                            <td class="text-right"><strong>4.97%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">56</td>
+                            <td><strong>철물점</strong></td>
+                            <td><code>CS300033</code></td>
+                            <td class="text-right">21,999,437,919원</td>
+                            <td class="text-right">173개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>천호역 6번</td>
+                            <td class="text-right">3,249,785,601원</td>
+                            <td class="text-right"><strong>14.77%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">57</td>
+                            <td><strong>네일숍</strong></td>
+                            <td><code>CS200029</code></td>
+                            <td class="text-right">11,483,453,135원</td>
+                            <td class="text-right">246개</td>
+                            <td><span class="badge badge-info">정상</span></td>
+                            <td>강남역</td>
+                            <td class="text-right">812,762,392원</td>
+                            <td class="text-right"><strong>7.08%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">58</td>
+                            <td><strong>애완동물</strong></td>
+                            <td><code>CS300029</code></td>
+                            <td class="text-right">7,915,045,753원</td>
+                            <td class="text-right">72개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>언북중학교</td>
+                            <td class="text-right">2,717,413,309원</td>
+                            <td class="text-right"><strong>34.33%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">59</td>
+                            <td><strong>자전거 및 기타운송장비</strong></td>
+                            <td><code>CS300025</code></td>
+                            <td class="text-right">5,462,381,175원</td>
+                            <td class="text-right">24개</td>
+                            <td><span class="badge badge-warning">주의(50개미만)</span></td>
+                            <td>오목교역</td>
+                            <td class="text-right">1,784,772,055원</td>
+                            <td class="text-right"><strong>32.67%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr><tr>
+                            <td class="text-center">60</td>
+                            <td><strong>자동차미용</strong></td>
+                            <td><code>CS200026</code></td>
+                            <td class="text-right">5,178,110,020원</td>
+                            <td class="text-right">53개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>한국교통안전공단 강남자동차검사소</td>
+                            <td class="text-right">685,768,750원</td>
+                            <td class="text-right"><strong>13.24%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">61</td>
+                            <td><strong>가전제품수리</strong></td>
+                            <td><code>CS200032</code></td>
+                            <td class="text-right">4,998,110,508원</td>
+                            <td class="text-right">56개</td>
+                            <td><span class="badge badge-warning">주의(100개미만)</span></td>
+                            <td>대림3동사거리</td>
+                            <td class="text-right">1,001,866,900원</td>
+                            <td class="text-right"><strong>20.04%</strong></td>
+                            <td><span class="badge badge-info">일반</span></td>
+                        </tr><tr>
+                            <td class="text-center">62</td>
+                            <td><strong>부동산중개업</strong></td>
+                            <td><code>CS200033</code></td>
+                            <td class="text-right">4,486,761,940원</td>
+                            <td class="text-right">23개</td>
+                            <td><span class="badge badge-warning">주의(50개미만)</span></td>
+                            <td>선릉역</td>
+                            <td class="text-right">1,774,847,384원</td>
+                            <td class="text-right"><strong>39.56%</strong></td>
+                            <td><span class="badge badge-danger">특화집중</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: 상권 특성 데이터 준비도 -->
+    <div id="tab-readiness" class="tab-content">
+        <div class="card">
+            <div class="card-title">상권 추천을 위한 7대 상권 특성 데이터 준비도 점검표 (코드 집계 완료)</div>
+            <div class="card-desc">원천 데이터 행 수, 결측치, 0값, 빠진 상권·분기 칸 수 실제 집계 결과</div>
+            <div class="interpretation-box" style="margin-bottom: 16px;">
+                <strong>지표 정의 안내:</strong>
+                <ul style="margin-left: 20px; margin-top: 6px; font-size: 13px;">
+                    <li><strong>파일 행 수:</strong> 2025년 기준 해당 원천 파일의 전체 레코드(행) 개수</li>
+                    <li><strong>빠진 상권 수:</strong> 서울시 마스터 상권 1,650개 중 연간 데이터가 1건도 없는 상권 수 (상권 미집계 파일은 '해당 없음')</li>
+                    <li><strong>빠진 상권×분기 칸 수:</strong> 마스터 상권(1,650개) × 4분기 = 6,600개 슬롯 중 데이터가 없는 빈 칸 수 (단일 스냅샷 파일은 0, 상권 미집계 파일은 '해당 없음')</li>
+                    <li><strong>주요컬럼 0값 건수:</strong> 핵심 분석 지표 컬럼에서 0으로 기록된 레코드 건수를 컬럼별로 분리 기재</li>
+                    <li><strong>결측치 수:</strong> 결측(NA)으로 비어 있는 값의 수</li>
+                </ul>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>상권 특성 항목</th>
+                            <th class="text-center">계산 가능 여부</th>
+                            <th>대응 원천 파일</th>
+                            <th class="text-right">파일 행수</th>
+                            <th class="text-right">빠진 상권수</th>
+                            <th class="text-right">빠진 상권×분기 칸수</th>
+                            <th>주요컬럼 0값 건수</th>
+                            <th class="text-right">결측치 수</th>
+                            <th>한계점 및 주의사항</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>고객 구성 (상주인구)</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15584_상주인구_상권.csv</code></td>
+                            <td class="text-right">6,532</td>
+                            <td class="text-right">17</td>
+                            <td class="text-right">68</td>
+                            <td><code>총_상주인구_수=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>4개 분기 수치가 동일하여 계절별 인구 변동 반영 제한</small></td>
+                        </tr><tr>
+                            <td><strong>고객 구성 (직장인구)</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15569_직장인구_상권.csv</code></td>
+                            <td class="text-right">6,564</td>
+                            <td class="text-right">9</td>
+                            <td class="text-right">36</td>
+                            <td><code>총_직장_인구_수=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>4개 분기 수치가 동일하여 계절별 직장인 변화 파악 불가</small></td>
+                        </tr><tr>
+                            <td><strong>고객 구성 (유동인구)</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15568_길단위인구_상권.csv</code></td>
+                            <td class="text-right">6,595</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">5</td>
+                            <td><code>총_유동인구_수=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>2025년 2~4분기 중 일부 상권 미집계 칸(5칸) 존재</small></td>
+                        </tr><tr>
+                            <td><strong>객단가</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15572_추정매출_상권.csv</code></td>
+                            <td class="text-right">85,732</td>
+                            <td class="text-right">73</td>
+                            <td class="text-right">324</td>
+                            <td><code>당월_매출_금액=0건, 당월_매출_건수=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>업종별 단가 편차가 커 상권 전체 단순평균보다 업종별 표준화 선행 필요</small></td>
+                        </tr><tr>
+                            <td><strong>프랜차이즈 비율</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15577_점포_상권.csv</code></td>
+                            <td class="text-right">304,775</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">0</td>
+                            <td><code>프랜차이즈_점포_수=250,286건, 전체_점포_수=2,197건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>행별 비율의 단순평균 왜곡 방지를 위해 점포 수 합계로 재계산 필수</small></td>
+                        </tr><tr>
+                            <td><strong>매출 변화</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15572_추정매출_상권.csv</code></td>
+                            <td class="text-right">85,732</td>
+                            <td class="text-right">73</td>
+                            <td class="text-right">324</td>
+                            <td><code>당월_매출_금액=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>2025년 4개 분기 자료로 계절 요인과 추세 성장의 분리가 제한적임</small></td>
+                        </tr><tr>
+                            <td><strong>경쟁 (점포 밀집도)</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15577_점포_상권.csv</code></td>
+                            <td class="text-right">304,775</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">0</td>
+                            <td><code>전체_점포_수=2,197건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>상권 내 점포 밀집도 지표이며 상권 경계 외부 인접 점포는 미포함</small></td>
+                        </tr><tr>
+                            <td><strong>경쟁 (상권 영역)</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15560_영역_상권.csv</code></td>
+                            <td class="text-right">1,650</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">0</td>
+                            <td><code>영역_면적=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>단일 연도 스냅샷이며 상권 경계 외부 인접 시설 미포함</small></td>
+                        </tr><tr>
+                            <td><strong>개폐업 수준</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15577_점포_상권.csv</code></td>
+                            <td class="text-right">304,775</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">0</td>
+                            <td><code>개업_점포_수=278,059건, 폐업_점포_수=272,396건, 개업_율=278,194건, 폐업_률=274,529건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>상권×업종 집계 데이터로 개별 점포의 개폐업 이력은 포함되지 않음</small></td>
+                        </tr><tr>
+                            <td><strong>상권 변화 지표</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-15576_상권변화지표_상권.csv</code></td>
+                            <td class="text-right">6,600</td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">0</td>
+                            <td><code>운영_영업_개월_평균=0건, 폐업_영업_개월_평균=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>상권 단위 집계 지표로 평균 개월 수만 제공</small></td>
+                        </tr><tr>
+                            <td><strong>소비 수준</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-success">
+                                    필요한 컬럼이 있어 계산할 수 있음
+                                </span>
+                            </td>
+                            <td><code>OA-22166_소비_행정동.csv</code></td>
+                            <td class="text-right">1,700</td>
+                            <td class="text-right">해당 없음</td>
+                            <td class="text-right">해당 없음</td>
+                            <td><code>지출_총금액=0건</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>행정동 425개 전 분기 집계 완료(빈칸 0칸). 소비 데이터 미수집 행정동에 속한 상권 수는 0개임 (상권 공간 매핑 연계 필요)</small></td>
+                        </tr><tr>
+                            <td><strong>임대료 · 보증금</strong></td>
+                            <td class="text-center">
+                                <span class="badge badge-danger">
+                                    데이터 없음
+                                </span>
+                            </td>
+                            <td><code>데이터 없음</code></td>
+                            <td class="text-right">0</td>
+                            <td class="text-right">1650</td>
+                            <td class="text-right">6600</td>
+                            <td><code>데이터 없음</code></td>
+                            <td class="text-right">0</td>
+                            <td><small>원천 데이터 미제공으로 외부 공공 임대 시세 연계 없이는 산출 불가</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="interpretation-box" style="margin-top: 16px;">
+                <strong>쉬운 해석:</strong> 고객 구성, 객단가, 프랜차이즈 비율, 매출 변화, 경쟁, 개폐업, 소비 수준 등 7대 상권 특성은 모두 보유 데이터에 필요한 컬럼이 있어 계산할 수 있습니다. 단, 임대료·보증금 항목은 원천 데이터에 없으므로 향후 공공 임대 시세 데이터 연계가 권장됩니다.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openTab(tabId) {
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(el => el.classList.remove('active'));
+    
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+
+</body>
+</html>
