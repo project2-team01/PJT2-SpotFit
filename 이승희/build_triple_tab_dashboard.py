@@ -171,7 +171,7 @@ html_content = f"""<!DOCTYPE html>
             <h1 class="text-lg font-bold text-slate-900 tracking-tight">SpotFit Commercial Intelligence</h1>
             <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700">v2.5 Full Suite</span>
           </div>
-          <p class="text-xs text-slate-500">소상공인 53.5만 전수 프로파일링 & 1,650개 상권 맞춤 추천 시스템</p>
+          <p class="text-xs text-slate-500">소상공인 53.5만 전수 프로파일링 & 1,565개 실측 상권 맞춤 추천 시스템</p>
         </div>
       </div>
       
@@ -323,39 +323,39 @@ html_content = f"""<!DOCTYPE html>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
                   <tr class="hover:bg-slate-50">
-                    <td class="py-2 px-3 font-bold">강남구</td>
+                    <td class="py-2 px-3 font-bold">금천구</td>
                     <td class="py-2 px-3 text-purple-700 font-semibold">과학·기술</td>
-                    <td class="py-2 px-3 font-bold text-blue-600">1.47</td>
-                    <td class="py-2 px-3">7,820개 (14.5%)</td>
-                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-bold">초특화</span></td>
+                    <td class="py-2 px-3 font-bold text-blue-600">1.881</td>
+                    <td class="py-2 px-3">5,814개 (32.8%)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-bold">서울 1위 특화</span></td>
                   </tr>
                   <tr class="hover:bg-slate-50">
-                    <td class="py-2 px-3 font-bold">마포구</td>
-                    <td class="py-2 px-3 text-rose-700 font-semibold">음식</td>
-                    <td class="py-2 px-3 font-bold text-blue-600">1.35</td>
-                    <td class="py-2 px-3">10,858개 (38.8%)</td>
-                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">외식 특화</span></td>
+                    <td class="py-2 px-3 font-bold">양천구</td>
+                    <td class="py-2 px-3 text-emerald-700 font-semibold">교육</td>
+                    <td class="py-2 px-3 font-bold text-blue-600">1.922</td>
+                    <td class="py-2 px-3">2,168개 (12.0%)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">목동 학원가</span></td>
                   </tr>
                   <tr class="hover:bg-slate-50">
                     <td class="py-2 px-3 font-bold">중구</td>
                     <td class="py-2 px-3 text-amber-700 font-semibold">소매</td>
-                    <td class="py-2 px-3 font-bold text-blue-600">1.61</td>
-                    <td class="py-2 px-3">9,412개 (36.2%)</td>
+                    <td class="py-2 px-3 font-bold text-blue-600">1.511</td>
+                    <td class="py-2 px-3">7,597개 (31.5%)</td>
                     <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">전통 도소매</span></td>
                   </tr>
                   <tr class="hover:bg-slate-50">
-                    <td class="py-2 px-3 font-bold">노원구</td>
-                    <td class="py-2 px-3 text-emerald-700 font-semibold">교육</td>
-                    <td class="py-2 px-3 font-bold text-blue-600">1.31</td>
-                    <td class="py-2 px-3">1,480개 (8.2%)</td>
-                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">학원가 밀집</span></td>
+                    <td class="py-2 px-3 font-bold">중랑구</td>
+                    <td class="py-2 px-3 text-blue-700 font-semibold">수리·개인</td>
+                    <td class="py-2 px-3 font-bold text-blue-600">1.487</td>
+                    <td class="py-2 px-3">2,600개 (15.5%)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-bold">생활 밀착형</span></td>
                   </tr>
                   <tr class="hover:bg-slate-50">
-                    <td class="py-2 px-3 font-bold">서초구</td>
-                    <td class="py-2 px-3 text-indigo-700 font-semibold">보건의료</td>
-                    <td class="py-2 px-3 font-bold text-blue-600">1.28</td>
-                    <td class="py-2 px-3">2,110개 (7.6%)</td>
-                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">클리닉 밀집</span></td>
+                    <td class="py-2 px-3 font-bold">용산구</td>
+                    <td class="py-2 px-3 text-rose-700 font-semibold">음식</td>
+                    <td class="py-2 px-3 font-bold text-blue-600">1.270</td>
+                    <td class="py-2 px-3">6,220개 (37.1%)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">이태원·용리단길</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -433,17 +433,20 @@ html_content = f"""<!DOCTYPE html>
               <span class="p-1.5 rounded-lg bg-blue-100 text-blue-600 text-sm"><i class="fa-solid fa-chart-line"></i></span>
               행정동별 소상공인 점포수 vs 서울시 상권 총매출액 산점도 및 선형 회귀 추세선
             </h3>
-            <p class="text-xs text-slate-500 mt-0.5">N = 397개 행정동, 선형 회귀식: y = 0.5648x - 121.14 억 원 (R² = 0.344)</p>
+            <p class="text-xs text-slate-500 mt-0.5">N = 396개 행정동, 선형 회귀식: y = 0.5648x - 119.59 억 원 (R² = 0.343)</p>
           </div>
         </div>
         <div class="h-80">
           <canvas id="scatterRegressionChart"></canvas>
         </div>
         <div class="easy-box">
-          <div class="font-bold mb-1">💡 쉬운 해석: 점포가 많으면 매출도 무조건 많을까?</div>
-          스피어만 순위상관계수가 <b>+0.768</b>로 매우 높아, 기본적으로 <b>"점포가 많은 동네가 총매출도 크다"</b>는 강력한 법칙이 성립합니다. 
-          하지만 역삼1동, 여의동처럼 회귀선 훨씬 위쪽에 위치한 동네는 <b>점포 수 대비 매출이 비정상적으로 높은 초우량 상권</b>인 반면, 
-          회귀선 아래쪽에 위치한 동네는 점포는 난립해 있지만 매출 파이가 작아 <b>치열한 출혈 경쟁(레드오션)</b>을 겪고 있음을 뜻합니다.
+          <div class="font-bold mb-1">💡 쉬운 해석: 점포가 많으면 매출도 무조건 많을까? (회귀 잔차 분석)</div>
+          스피어만 순위상관계수가 <b>+0.773</b>, 피어슨 상관계수가 <b>+0.586</b>으로 높아 전반적으로 <b>"점포가 많은 동네가 총매출도 크다"</b>는 강력한 경향이 성립합니다. 
+          하지만 <b>회귀선 대비 실제 위치(잔차)</b>를 보면 상권의 이면이 드러납니다:
+          <ul class="list-disc list-inside mt-1 space-y-0.5 text-slate-700">
+            <li><b>회귀선 아득히 위쪽 (초과 실적)</b>: <b>동작구 노량진1동</b>은 점포 수가 1,341개이나 총매출은 <b>1조 2,677억 원</b>으로 회귀선 기대치(약 638억 원) 대비 <b>+12,039억 원 초과</b>합니다. 이는 노량진수산물도매시장이라는 전국 단위 수산물 도매 거래가 집계된 특수 이상치 때문입니다.</li>
+            <li><b>회귀선 훨씬 아래쪽 (과밀 레드오션)</b>: <b>강남구 역삼1동</b>은 점포 수가 <b>13,380개</b>로 서울 1위이나, 상권 총매출은 <b>3,058억 원</b>으로 회귀선 기대치(약 7,438억 원)보다 무려 <b>-4,380억 원이나 부족</b>합니다. 즉, 점포는 넘쳐나지만 매출 파이가 쪼개져 치열한 출혈 경쟁을 겪고 있습니다.</li>
+          </ul>
         </div>
       </div>
 
@@ -472,8 +475,9 @@ html_content = f"""<!DOCTYPE html>
           </table>
         </div>
         <div class="easy-box">
-          <div class="font-bold mb-1">💡 쉬운 해석: 메가 상권의 함정</div>
-          강남구 역삼1동은 점포 수(13,380개)와 매출(8,200억 원) 모두 서울 1위지만, 임대료와 권리금이 극도로 높아 일반 초보 창업자에게는 매우 위험합니다. 따라서 창업 시에는 단순 매출 1등이 아니라 <b>내 업종에 특화된 알짜 기회 상권</b>을 찾아야 합니다.
+          <div class="font-bold mb-1">💡 쉬운 해석: 메가 상권의 함정과 창업 의사결정</div>
+          강남구 역삼1동은 등록 점포 수(13,380개) 서울 1위이나 상권 총매출은 3,058억 원으로 점포당 평균 매출(약 2,285만 원)은 비싼 임대료와 인건비를 감당하기에 녹록지 않습니다. 
+          초보 창업자는 겉보기에 화려한 외형 1등 동네 대신, <b>탭 3의 맞춤 추천 시뮬레이터</b>를 활용하여 내 목표 업종의 수요가 확실하고 경쟁이 덜한 <b>블루오션 상권</b>을 찾아야 생존 확률을 극대화할 수 있습니다.
         </div>
       </div>
 
@@ -960,8 +964,8 @@ html_content = f"""<!DOCTYPE html>
     }}));
     const xMax = 14000;
     const regLine = [
-      {{ x: 0, y: -121.14 }},
-      {{ x: xMax, y: (0.5648 * xMax - 121.14) }}
+      {{ x: 0, y: -119.59 }},
+      {{ x: xMax, y: (0.5648 * xMax - 119.59) }}
     ];
 
     window.scatterChart = new Chart(scCtx, {{
@@ -969,7 +973,7 @@ html_content = f"""<!DOCTYPE html>
       data: {{
         datasets: [
           {{
-            label: '행정동 (397개)',
+            label: '행정동 (396개)',
             data: scatterPoints,
             backgroundColor: 'rgba(37, 99, 235, 0.55)',
             borderColor: '#2563eb',
@@ -979,7 +983,7 @@ html_content = f"""<!DOCTYPE html>
           }},
           {{
             type: 'line',
-            label: '선형 회귀 추세선 (y = 0.5648x - 121.14)',
+            label: '선형 회귀 추세선 (y = 0.5648x - 119.59)',
             data: regLine,
             borderColor: '#e11d48',
             borderWidth: 2,
